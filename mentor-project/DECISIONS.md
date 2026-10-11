@@ -252,3 +252,49 @@
 - Fallback: No reranker.
 - Benchmark procedure: reranker A/B script (Phase 22); results in EVALUATION_RESULTS.md.
 - Date: 2026-10-08
+
+## D2.1 Primary repository SHA
+- Status: LOCKED
+- Decision: `fastapi/full-stack-fastapi-template` at `7257e606cb94eada1dca40173e2b7f99dd549bc6` (master HEAD, committed 2026-10-08, "Update release notes"). Verified via `git rev-parse HEAD`, working tree clean.
+- Alternatives: A later commit (rejected: citations must pin to a fixed commit; HEAD-at-phase-time is the rule).
+- Evidence: Local clone `data/repos/fst`; `LICENSE` = MIT (verified on repo itself); 152 Py/TS/JS files (43 .py, 109 .ts/.tsx), 252 files total; signup flow at `backend/app/api/routes/users.py:146-147` (`POST {API_V1_STR}/users/signup` -> `register_user`, router prefix `/users`, no extra api_router prefix); `tests/` present.
+- Reason: Matches Py+React stack per A18; HEAD-at-phase-time with recorded SHA is checkable.
+- Confidence: High
+- Fallback: None (SHA immutable; SUPERSEDED + repin only before any evaluation if wrong).
+- Date: 2026-10-11
+
+## D2.2 Secondary repository
+- Status: GATED (rubric scored; choice deferred)
+- Decision: No secondary locked yet. Rubric (licence permissive / <200 Py-TS files / documented request flow / tests / fork-copy risk), scored 2026-10-11 via repo pages + GitHub API (licences) + local inspection (primary only):
+  - full-stack-fastapi-template: MIT / 152 files PASS / auth+CRUD flows PASS / tests PASS / template-copy risk HIGH. Primary per A18.
+  - borys25ol/fastapi-realworld-backend: licence NULL on GitHub API (no licence file) FAIL / small Py backend / RealWorld auth+articles spec PASS / tests/ PASS / low copy risk. Best technical fit, BLOCKED on licence.
+  - mealie-recipes/mealie: AGPL-3.0 FAIL (demo OK, redistribution caution) / large (5603 commits) FAIL / domain flows PASS / tests PASS.
+  - spring-projects/spring-petclinic: Apache-2.0 PASS / Java-only FAIL (Py+TS scope) / tiny demo app / tests PASS / overexposed.
+  - gothinkster/node-express-realworld-example-app: licence NULL FAIL / TS, spec-standardized / tests vary.
+- Alternatives: Lock Conduit-FastAPI now (rejected: licence unclear is a stop condition); lock PetClinic (rejected: wrong language for MVP indexing).
+- Evidence: GitHub API licence fields (null = no licence); repo READMEs; local file counts for primary.
+- Reason: No candidate besides the primary currently passes licence + scope; per stop conditions, ask human before using an unlicensed repo.
+- Confidence: Medium
+- Fallback: PetClinic as cross-language stress reference only (never indexed in MVP), or Conduit-FastAPI if human confirms licence in writing.
+- Benchmark procedure: Re-score when human resolves licence question; record decision before Phase 6 needs it.
+- Date: 2026-10-11
+
+## D2.3 Secret scanner
+- Status: LOCKED
+- Decision: Built-in regex scanner required (`mentor/ingest/secrets.py`): AWS AKID, private-key headers, JWT-like, and quoted-literal `password=`/`api_key=` assignments (>=8 chars). gitleaks optional extra (not installed; built-in is the gate).
+- Alternatives: gitleaks as required (rejected: extra install, same gate achievable with regex + filename exclusions); unquoted-assignment matching (rejected: false-positived on kwarg passing `password=user_in.password` and excluded 14 source files incl. the signup route).
+- Evidence: Scanner tuning verified on `fst`: 0 files excluded as secret, signup `users.py` indexed, canary `AKIAIOSFODNN7EXAMPLE` detected, manifest contains zero scanner findings.
+- Reason: Quoted-literal rule catches real key material while `.env`/key files (real secret locations) are excluded by filename.
+- Confidence: Medium-high
+- Fallback: gitleaks as extra check if installed; tighten patterns if a canary ever leaks.
+- Date: 2026-10-11
+
+## D2.4 Counterfactual transformation
+- Status: LOCKED
+- Decision: `scripts/make_counterfactual.py` (deterministic, seeded by sort order): top-20 defined symbols with >2 whole-word refs renamed to `<old>_cf` (whole-word, all text files); 5 route strings suffixed `-cf` (whole-literal + path-substring with `[A-Za-z0-9_-]` lookahead guard), signup-prioritized; 3 UPPER_CASE config defaults in `backend/app/core/config.py` suffixed `-cf`. `.git`/caches excluded from copy. Map at `evals/counterfactual_map.json` (identifiers/routes/config/intentionally_kept=[]).
+- Alternatives: Random renames (rejected: non-reproducible); fewer renames (rejected: spec fixes 20/5/3).
+- Evidence: `fst-cf` generated; integrity check (identifier `\bOLD\b`, route with `(?!-cf)` guard) reports zero genuine leftovers; `users.py:146` is `@router.post("/signup-cf", ...)` with `UserPublic_cf`; 984 new-name occurrences.
+- Reason: Reproducible renames + signup coverage give the strongest available contamination control for the demo's key flow.
+- Confidence: Medium (rename-everywhere can touch generated client code; harmless since the copy is never executed).
+- Fallback: Delete `fst-cf` + map and regenerate (rollback procedure); never hand-edit the copy.
+- Date: 2026-10-11

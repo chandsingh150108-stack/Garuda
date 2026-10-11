@@ -1,0 +1,46 @@
+{
+  "identifiers": {
+    "client": "client_cf",
+    "User": "User_cf",
+    "Item": "Item_cf",
+    "superuser_token_headers": "superuser_token_headers_cf",
+    "random_lower_string": "random_lower_string_cf",
+    "UserCreate": "UserCreate_cf",
+    "UserPublic": "UserPublic_cf",
+    "random_email": "random_email_cf",
+    "Message": "Message_cf",
+    "create_user": "create_user_cf",
+    "normal_user_token_headers": "normal_user_token_headers_cf",
+    "ItemPublic": "ItemPublic_cf",
+    "verify_password": "verify_password_cf",
+    "UserUpdate": "UserUpdate_cf",
+    "get_user_by_email": "get_user_by_email_cf",
+    "ItemCreate": "ItemCreate_cf",
+    "Token": "Token_cf",
+    "UserUpdateMe": "UserUpdateMe_cf",
+    "create_random_item": "create_random_item_cf",
+    "get_current_active_superuser": "get_current_active_superuser_cf"
+  },
+  "routes": {
+    "/signup": "/signup-cf",
+    "/health-check/": "/health-check-cf",
+    "/items": "/items-cf",
+    "/login/access-token": "/login/access-token-cf",
+    "/login/test-token": "/login/test-token-cf"
+  },
+  "config": {
+    "API_V1_STR": {
+      "old": "str = \"/api/v1\"",
+      "new": "str = \"/api/v1-cf\""
+    },
+    "FRONTEND_HOST": {
+      "old": "str = \"http://localhost:5173\"",
+      "new": "str = \"http://localhost:5173-cf\""
+    },
+    "FASTAPI_ENV": {
+      "old": "Literal[\"development\"] | None = None",
+      "new": "Literal[\"development-cf\"] | None = None"
+    }
+  },
+  "intentionally_kept_string_literals": []
+}

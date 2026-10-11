@@ -22,3 +22,21 @@
 
 ### Next
 - Phase 2: clone + pin `full-stack-fastapi-template` SHA, sandboxed ingest (filters/secrets/manifest), counterfactual copy. Needs one network clone; then offline.
+
+## 2026-10-11 — Phase 2 (target machine: RTX 5060 8GB, Python 3.14.0)
+
+### What was asked
+- "how many phases ... are implemented" → answered 2/23 (Phases 0+1).
+- "start implementing the next phases" (plan mode) → planned Phase 2 only, on target laptop; answers: clone now, Phase 2 only, target laptop.
+- "go ahead" (build mode) → executed Phase 2.
+
+### Phase 2 — Repository acquisition, pinning, sandboxed ingestion → GATE PASSED
+- Env: target confirmed via `nvidia-smi` (8151 MiB, max 100W, driver 610.74); `pytest` installed (9.1.1, MIT); full suite 13/13 green. Deviations: Python 3.14 vs 3.12, disk 22.8GB <30GB, ollama/node absent from PATH (not needed).
+- Research: pinned `7257e60` (master HEAD 2026-10-08); MIT licence read locally; 152 Py/TS/JS files; signup `POST {API_V1_STR}/users/signup` at `users.py:146-147`; 5 candidates scored (secondary GATED on licence question).
+- Implemented: `mentor/{config,ingest/{acquire,filters,secrets,manifest}}`, `scripts/make_counterfactual.py`, `tests/test_ingest.py` (9 tests) + `tests/fixtures/` (canary FAKE key + README; rest runtime-generated).
+- Hardening found by measurement: (1) Windows junctions treated as symlink-equivalent (os.walk would descend otherwise); (2) secret scanner narrowed to quoted literals after unquoted matching FP-excluded 14 source files incl. signup handler; (3) counterfactual route rename extended to path substrings + signup prioritized.
+- Manifest: 252 entries = filesystem walk; 208 indexed; zero scanner findings. Counterfactual `fst-cf`: 20/5/3 renames, integrity clean, map at `evals/counterfactual_map.json`.
+- Docs: D2.1–D2.4 in DECISIONS.md; rubric + tuning in RESEARCH_LOG.md; gates in VALIDATION_REPORT.md; commit `phase-02: pinned repo and sandboxed ingest`.
+
+### Next
+- Phase 3: parser + symbol model (tree-sitter Py/TS, routes/models, 10s worker timeout, golden tests).
