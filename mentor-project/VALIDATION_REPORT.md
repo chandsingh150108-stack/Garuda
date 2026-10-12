@@ -32,3 +32,8 @@
 | 2026-10-12 | Phase 6 metrics | `pytest tests/test_metrics.py -q` | PASS | overlap unit, recall/MRR/symbol-hit/file-P, Wilson reference match |
 | 2026-10-12 | Phase 6 baselines | `mentor eval retrieval` B1/B3/CF-B3 | RECORDED | B1 R@10 0.341 / B3 0.424 / CF-B3 0.424 (n=22, intervals overlap — directional only); CF retrieval == original |
 | 2026-10-12 | Phase 6 suite | `pytest tests/ -q` | PASS 101/101 | 89 prior + 12 new green |
+| 2026-10-12 | Phase 7 licences | source cards (HF) | VERIFIED | bge-m3 MIT; jina-v2-base-code Apache-2.0 (needs trust_remote_code); jina-code-0.5b class non-commercial (V15) |
+| 2026-10-12 | Phase 7 bge-m3 | download + load + encode 319 chunks CPU | BLOCKED on time | OOM at 3.9GB free without low-mem flags; with flags 319/19.9min (~80min projected, rule needs <30min); recall unmeasured (moot) |
+| 2026-10-12 | Phase 7 jina-v2 | `bench_embedders --candidates jina-v2-code` | BLOCKED on load | ImportError: custom modeling code vs transformers 5.19.0; downgrade risks ST 6.1 stack |
+| 2026-10-12 | Phase 7 G1 | rule applied (gain AND time AND licence) | REJECTED | Neither candidate meets all three; B3 lexical-only ships (specified success); default DENSE_MODEL=none |
+| 2026-10-12 | Phase 7 suite | `pytest tests/ -q` | PASS 107/107 | 101 prior + 6 dense-unit (fake encoder, no downloads) green |

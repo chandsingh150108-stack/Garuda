@@ -1,0 +1,8 @@
+# Measurement-only dependencies for eval/benchmark tooling (NOT the shipped
+# product path). Installed 2026-10-12 for the Phase 7 (G1) gate. The shipped
+# default remains lexical-only with zero ML weights required.
+# torch resolves to the CPU build on this laptop (installed 2.14.1+cpu).
+sentence-transformers==6.1.0
+transformers==5.19.0
+torch==2.14.1
+numpy==2.5.3

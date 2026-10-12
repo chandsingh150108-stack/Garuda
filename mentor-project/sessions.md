@@ -79,3 +79,13 @@
 
 ### Next
 - Phase 7: embedding decision gate G1 (licence checks + recall@10 benchmark; adopt or ship lexical-only).
+
+## 2026-10-12 — Phase 7 (embedding gate G1) -> GATE PASSED with REJECT outcome
+- Licences verified on cards: bge-m3 MIT, jina-v2-base-code Apache-2.0 (trust_remote_code), jina-code-0.5b non-commercial (skipped).
+- Implemented `mentor/retrieve/dense.py` (CPU, normalized fp32, brute-force cosine, metadata guards) + `scripts/bench_embedders.py` (sharded, resume-safe caches, B1/B3-equivalent harness).
+- Measured: bge-m3 loads (low-mem flags; plain load OOM at 3.9GB free) but encodes ~3.75 s/chunk -> ~80 min projected, FAILS <30 min rule; jina load BLOCKED by custom-code vs transformers-5 incompatibility.
+- G1 REJECTED per rule (gain AND time AND licence); `DENSE_MODEL = "none"` ships; eval tooling pinned separately (requirements-eval.txt, not shipped).
+- Suite 107/107 green. Commit `phase-07: embedding gate G1 decided`.
+
+### Next
+- Phase 8: local LLM gateway + laptop hardware benchmark G2 (Qwen2.5-Coder-7B Q4 via Ollama, VRAM/throughput/schema-validity).

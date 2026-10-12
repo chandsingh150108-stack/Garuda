@@ -399,6 +399,20 @@
 - Fallback: None.
 - Date: 2026-10-12
 
+## G1 embedding gate — OUTCOME: REJECTED (lexical-only ships)
+- Status: LOCKED (outcome; revisit only with new evidence + SUPERSEDED entry)
+- Decision: Dense retrieval NOT adopted. Default `DENSE_MODEL = "none"` (B3 lexical+symbol+path). `mentor/retrieve/dense.py` stays as a tested-but-disabled path; eval tooling pinned in `requirements-eval.txt` (not shipped).
+- Alternatives: Adopt bge-m3 (rejected: fails time criterion, recall unmeasured-moot); adopt jina-v2-code (rejected: unrunnable + trust_remote_code supply-chain cost); adopt jina-code-0.5b (rejected without download: non-commercial per V15, needs GPU + trust_remote_code).
+- Evidence (measured 2026-10-12, this laptop, CPU-only torch 2.14.1):
+  - Licences verified on source cards: bge-m3 MIT (1024d/8192ctx/568M, no query prefix needed); jina-embeddings-v2-base-code Apache-2.0 (768d/8k/161M, needs trust_remote_code); jina-code-0.5b class non-commercial (V15).
+  - bge-m3: downloaded (~2.3 GB) + loads with low-mem flags (first attempt OOM at 3.9 GB free RAM without them); encode throughput 319 chunks / 19.9 min (~3.75 s/chunk, batch 4 @1024 ctx, 16 threads) → ~80 min projected full-corpus, FAILS the <30 min rule. Recall@10 therefore unmeasured (moot: all three criteria must hold).
+  - jina-v2-code: downloaded; load BLOCKED — custom modeling code imports `find_pruneable_heads_and_indices`, removed in transformers 5.19.0 (ST 6.1.0 stack). Downgrading transformers risks the ST stack; the model additionally requires trust_remote_code (T8). Fails the runs-on-CPU requirement.
+  - B3 floor stands: R@10 0.424 (Phase 6, n=22).
+- Reason: Neither candidate satisfies all of (gain ∧ time ∧ licence). Lexical-only shipping is the specified success outcome, not a failure.
+- Confidence: High (time/licence blockers measured, not inferred)
+- Fallback: B3 lexical-only; revisit on server-tier hardware (GPU) or lighter permissive models, via new G1 run.
+- Date: 2026-10-12
+
 ## D4.1 Chunk budget
 - Status: LOCKED
 - Decision: Max ~512 approximate tokens per chunk, tokens = characters // 4 of chunk `text` (deterministic approximation, recorded here). cAST split-then-merge: top-level AST units; oversized units split recursively at named-child boundaries; small adjacent siblings merged greedily while within budget. Code files (py/ts/tsx/js/jsx) via isolated AST plan (fresh `run_isolated` child per file — same containment as D3.2 after the 0.26.0 saga); other indexed text files (json/yaml/toml/md/etc.) via degraded line windows of 80 lines with 20-line overlap. A single leaf that cannot split within budget is emitted whole and flagged `is_exception=1` (recorded, queryable).

@@ -1,7 +1,7 @@
 # PROJECT_STATUS
 
-- Current phase: 6 gate PASSED 2026-10-12; next: Phase 7
-- Completed phases: 0 (probe + control files), 1 (A1-A18 + G1-G4, test_decisions.py 3/3 passed), 2 (pinned repo 7257e60 + sandboxed ingest + counterfactual, 13/13 tests green), 3 (parser + symbol model, 152/152 coverage, 43/43 tests green), 4 (chunker + SQLite index, 208 files/1279 chunks/0 failed, 69/69 tests green), 5 (lexical+symbol+path retrieval with RRF-60 fusion, 5/5 identifier queries top-3, p95 <200ms, 89/89 tests green), 6 (frozen 30-Q gold v1 + B1/B3 baselines + counterfactual set, 101/101 tests green)
+- Current phase: 7 gate PASSED 2026-10-12 (G1 REJECTED, lexical-only ships); next: Phase 8
+- Completed phases: 0 (probe + control files), 1 (A1-A18 + G1-G4, test_decisions.py 3/3 passed), 2 (pinned repo 7257e60 + sandboxed ingest + counterfactual, 13/13 tests green), 3 (parser + symbol model, 152/152 coverage, 43/43 tests green), 4 (chunker + SQLite index, 208 files/1279 chunks/0 failed, 69/69 tests green), 5 (lexical+symbol+path retrieval with RRF-60 fusion, 5/5 identifier queries top-3, p95 <200ms, 89/89 tests green), 6 (frozen 30-Q gold v1 + B1/B3 baselines + counterfactual set, 101/101 tests green), 7 (G1 REJECTED: licences verified, bge-m3 too slow on CPU, jina unrunnable; lexical-only ships, 107/107 tests green)
 - Blocked: none
 - Failed tests: none
 - Open questions:
@@ -9,4 +9,4 @@
   - Python is 3.14.0, spec wants 3.12: deviation stands (recorded D0.2); venv+pip used, stdlib-only Phase 2 code is version-agnostic.
   - Secondary repo licence: Conduit-FastAPI + Express-Conduit have no licence file (GitHub API null). D2.2 GATED; ask human before use.
   - Disk free 22.8GB < 30GB Phase 0 precondition: sufficient for Phase 2; re-check before Phase 8 model pulls.
-- Next action: Phase 7 (embedding decision gate G1 — benchmark, adopt or ship lexical-only).
+- Next action: Phase 8 (local LLM gateway + laptop hardware benchmark G2).

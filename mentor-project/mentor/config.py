@@ -15,3 +15,8 @@ LOCKFILE_MAX_BYTES = 200_000
 # Parser limits (spec Phase 3, LOCKED via D3.2)
 PARSE_TIMEOUT_S = 10.0
 PARSE_MAX_BYTES = 1_000_000
+
+# Dense retrieval default (spec Phase 7, G1 outcome 2026-10-12: REJECTED).
+# "none" = lexical-only B3 ships. Any other value must name a MODEL_SPECS
+# entry in mentor/retrieve/dense.py and requires a full index rebuild (D7.3).
+DENSE_MODEL = "none"
