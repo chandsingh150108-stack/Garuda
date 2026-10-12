@@ -61,3 +61,12 @@
 
 ### Next
 - Phase 5: lexical/symbol/path retrieval + RRF fusion + confidence signals (D5.1–D5.3).
+
+## 2026-10-12 — Phase 5 (lexical/symbol/path retrieval + RRF fusion) → GATE PASSED
+- Research: RRF k=60 confirmed in primary paper (live PDF); CodeGrep abstract verified live (threshold 0.375/0.445/0.677); PowerShell backtick-mangling lesson (tests call API directly).
+- Implemented: `mentor/retrieve/{analyze,lexical,symbols,paths,fusion,confidence,search}.py`, `search` CLI command, `scripts/bench_search.py`. Parameterized-only SQL (incl. LIKE ESCAPE + quoted FTS terms); read-only index open; deterministic RRF with chunk_id tiebreak.
+- Gates: 5/5 identifier definitions top-3 fused (`register_user`, `create_user`, `verify_password`, `User`, `get_password_hash`); determinism; injection read-only; p50 ~21ms / p95 ~56ms (<200ms, two runs); G3 input recorded (fused ≥ lexical, 2 symbol rescues, n=5 directional).
+- Suite 89/89 green. Commit `phase-05: lexical and fused retrieval`.
+
+### Next
+- Phase 6: frozen 30-Q gold set + harness (B1/B3 baselines, counterfactual set, Wilson stats).

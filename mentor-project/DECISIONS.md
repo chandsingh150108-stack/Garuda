@@ -339,6 +339,36 @@
 - Fallback: `retries=0` restores single-attempt behavior; nothing else changes.
 - Date: 2026-10-12
 
+## D5.1 Query analysis
+- Status: LOCKED
+- Decision: Extract backticked identifiers, CamelCase/snake_case word tokens, route-like paths (`/seg/seg`), and file-like tokens (`name.ext`); keep the original query string for display and Phase 7 dense use. Identifier splitting reuses Phase 4 `split_identifier` for FTS matching.
+- Alternatives: Raw query straight to FTS (rejected: backticks/slashes become noise; symbol/path retrievers need typed tokens); stemming (rejected: code identifiers must match exactly).
+- Evidence: Spec Phase 5; fst flows contain literal routes (`/users/signup`) and symbol names.
+- Reason: Code questions carry typed signals; each retriever consumes its own type.
+- Confidence: High
+- Fallback: Untyped fallback — all word tokens to BM25 when no typed token is found.
+- Date: 2026-10-12
+
+## D5.2 Fusion
+- Status: LOCKED
+- Decision: RRF over three rankings (BM25, symbol, path) with constant k=60: score(d) = Σ 1/(60 + rank). 1-based ranks; ties broken by chunk_id ascending for determinism.
+- Alternatives: Score-weighted sums (rejected: BM25/symbol/path scores are incommensurable); lower k (rejected: paper fixed 60 in pilot, unaltered in validation).
+- Evidence: Cormack/Clarke/Büttcher SIGIR 2009 primary paper, formula + k=60 confirmed live from cormack.uwaterloo.ca PDF 2026-10-12 [PRIMARY RESEARCH].
+- Reason: Unsupervised, no training, robust to outlier rankings; deterministic.
+- Confidence: High
+- Fallback: Any single ranking alone (all three remain independently queryable).
+- Date: 2026-10-12
+
+## D5.3 Confidence signals
+- Status: LOCKED
+- Decision: Per query record top fused score; identifier coverage = fraction of extracted identifiers found (as FTS tokens) in top-10 chunk identifiers; two-retriever agreement = whether ≥2 of (BM25, symbol, path) rank the same chunk #1. Thresholds (τ_score, τ_cov) stay GATED to Phase 9 calibration; this phase only emits signals.
+- Alternatives: Single-score gating now (rejected: thresholds need gold data, Phase 6/9).
+- Evidence: Spec Phase 5; CodeGrep abstract verified live (arXiv 2608.05886): BM25 P=0.375 degrades, Jina 0.445 neutral, 0.677 helps — directional support for precision-gated behavior. File-level precision@10 defined operationally as (# top-10 files containing ≥1 known-relevant location)/10; G3 gate uses this definition on our gold set in Phase 22.
+- Reason: Abstention (Phase 9) needs calibrated, explainable signals, not vibes.
+- Confidence: Medium (thresholds uncalibrated until Phase 9)
+- Fallback: None (signals always emitted, even when weak).
+- Date: 2026-10-12
+
 ## D4.1 Chunk budget
 - Status: LOCKED
 - Decision: Max ~512 approximate tokens per chunk, tokens = characters // 4 of chunk `text` (deterministic approximation, recorded here). cAST split-then-merge: top-level AST units; oversized units split recursively at named-child boundaries; small adjacent siblings merged greedily while within budget. Code files (py/ts/tsx/js/jsx) via isolated AST plan (fresh `run_isolated` child per file — same containment as D3.2 after the 0.26.0 saga); other indexed text files (json/yaml/toml/md/etc.) via degraded line windows of 80 lines with 20-line overlap. A single leaf that cannot split within budget is emitted whole and flagged `is_exception=1` (recorded, queryable).

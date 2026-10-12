@@ -22,3 +22,8 @@
 | 2026-10-12 | Phase 4 build | `python -m mentor.cli index --repo data/repos/fst --sha 7257e60 --out data/indexes/fst.sqlite` (x2) | PASS | 208 files, 1279 chunks (261 ast + 1018 lines), 609 symbols, 675 imports, 1618 edges, 23 routes, 2 models, 8 config_facts, failed=[] — identical both runs |
 | 2026-10-12 | Phase 4 gates | `pytest tests/test_store.py -q` + full `pytest tests/ -q` | PASS 69/69 | idempotence (dump-equal), reconstruction all 1279 chunks, top-level coverage no gaps, FTS signup hit, budget max 512 (4 single-line exceptions: 3 email HTML + index.ts:4, max 1607), counts match manifest |
 | 2026-10-12 | Phase 4 bug | duplicate chunk_id UNIQUE violation on index.ts | FIXED, regression-tested | Root cause (own logic, not binding): 130 same-line AST children each re-emitted the whole line. Fix: single-line spans atomic + identical-range dedupe in split_units |
+| 2026-10-12 | Phase 5 unit | `pytest tests/test_analyze.py tests/test_fusion.py -q` | PASS 11/11 | typed extraction, safe MATCH alphabet, hand-computed RRF (Fraction-exact), tie-break, k=60 |
+| 2026-10-12 | Phase 5 search | `pytest tests/test_search.py -q` | PASS 9/9 | 5/5 identifier definitions top-3 fused, determinism, injection read-only, k honored, confidence wellformed |
+| 2026-10-12 | Phase 5 latency | `python scripts/bench_search.py` (20 queries) | PASS p95<200ms | p50 21.2ms, p95 55.9ms (2nd run 23.6/38.9); recorded EVALUATION_RESULTS.md |
+| 2026-10-12 | Phase 5 G3 input | precision probe, lexical vs fused file-P@10 (5 queries) | RECORDED | fused ≥ lexical all 5 (0.2/0.1/0.1/0.1/0.1 vs 0.2/0.1/0.0/0.1/0.0); symbol rescued 2; n=5 directional only |
+| 2026-10-12 | Phase 5 suite | `pytest tests/ -q` | PASS 89/89 | 69 prior + 20 new green |

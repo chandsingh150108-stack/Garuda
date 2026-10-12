@@ -49,3 +49,8 @@ Local probe 2026-10-08 (dev machine, NOT target): RTX 4050 Laptop 6GB, driver 58
 - Token counting: chars//4 approximation (recorded D4.1). Identifier splitting: separators + camel/acronym/digit boundaries, original+parts indexed.
 - Line-window budget fix (own measurement): fixed 80-line windows of long lines blew past 512 tokens (64 violations on .md/.yml). Windows now greedy-bounded by lines AND budget; single over-budget line = recorded exception. Final: max non-exception 512, 4 exceptions (email HTML minified lines, index.ts:4). [ENGINEERING JUDGMENT + measurement]
 - Duplicate-span root cause (own logic): same-line AST children re-emitted their shared line once per descendant (index.ts: 130 identical spans -> UNIQUE violation). Single-line spans are atomic (line-granular model can't split columns); identical ranges deduped. [ENGINEERING JUDGMENT + measurement]
+
+## Phase 5 research (2026-10-12)
+- RRF formula + k=60 confirmed in the PRIMARY paper (Cormack/Clarke/Büttcher SIGIR 2009, cormack.uwaterloo.ca PDF): score(d) = Σ 1/(k+r(d)), k fixed in pilot, unaltered in validation, near-optimal but not critical. [PRIMARY RESEARCH]
+- CodeGrep abstract verified live (arXiv 2608.05886, 6 Aug 2026): precision threshold BM25 0.375 (hurts) / Jina 0.445 (neutral) / CodeGrep 0.677 (helps) on SWE-Bench Verified; 14B searcher (no laptop fit, per V11). Operational file-P@10 defined for G3 on our gold set. [PRIMARY RESEARCH]
+- Shell-quoting lesson: PowerShell backtick-escaping mangled a demo query (different analysis, different results) — implementation verified correct via single-quoted rerun + direct-API debug. Tests call `search()` directly, immune. [ENGINEERING JUDGMENT]

@@ -23,6 +23,20 @@ def cmd_index(args) -> int:
     return 0
 
 
+def cmd_search(args) -> int:
+    from mentor.retrieve import search as search
+    res = search.search(Path(args.index), args.sha, args.query, k=args.k)
+    for i, hit in enumerate(res["hits"], start=1):
+        print(f"{i}. [{hit['chunk_id']}] {hit['path']}:{hit['start_line']}-{hit['end_line']}"
+              f" score={hit['score']:.4f} via={','.join(hit['retrievers'])}")
+        print(f"   {hit['header'][:120]}")
+    conf = res["confidence"]
+    print(f"confidence: top_score={conf['top_score']:.4f} "
+          f"coverage={conf['identifier_coverage']:.2f} "
+          f"agreement={conf['two_retriever_agreement']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -34,6 +48,11 @@ def main(argv: list[str] | None = None) -> int:
     idx.add_argument("--out", default="data/indexes/fst.sqlite")
     idx.add_argument("--repo-id", default="fst")
     idx.add_argument("--timeout", type=float, default=10.0)
+    sea = sub.add_parser("search", help="Fused retrieval over an index")
+    sea.add_argument("query")
+    sea.add_argument("--k", type=int, default=10)
+    sea.add_argument("--index", default="data/indexes/fst.sqlite")
+    sea.add_argument("--sha", default=PINNED_SHA)
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -41,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.parses is None:
             args.parses = f"data/parses/{args.sha}.json"
         return cmd_index(args)
+    if args.command == "search":
+        return cmd_search(args)
     parser.error(f"unknown command {args.command}")
     return 2
 
