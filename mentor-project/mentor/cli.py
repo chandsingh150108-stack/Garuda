@@ -37,6 +37,26 @@ def cmd_search(args) -> int:
     return 0
 
 
+def cmd_eval_retrieval(args) -> int:
+    import json
+    from mentor.eval import gold as gold_mod
+    from mentor.eval import harness as harness
+    gold = gold_mod.load(Path(args.gold))
+    problems = gold_mod.validate(gold, Path("data/repos/fst"))
+    if problems:
+        print("GOLD INVALID:")
+        for p in problems:
+            print(f"  {p}")
+        return 1
+    res = harness.run(gold, Path(args.index), args.sha, args.baseline)
+    print(f"baseline={res['baseline']} n={res['n']}")
+    for key, val in res["summary"].items():
+        print(f"  {key}: mean={val['mean']} full_rate={val['full_rate']}"
+              f" ci95={val['full_rate_ci95']} n={val['n']}")
+    print(json.dumps(res["summary"]))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -53,6 +73,12 @@ def main(argv: list[str] | None = None) -> int:
     sea.add_argument("--k", type=int, default=10)
     sea.add_argument("--index", default="data/indexes/fst.sqlite")
     sea.add_argument("--sha", default=PINNED_SHA)
+    evl = sub.add_parser("eval", help="Run evaluation harnesses")
+    evl.add_argument("what", choices=["retrieval"])
+    evl.add_argument("--gold", default="evals/gold/v1.yaml")
+    evl.add_argument("--index", default="data/indexes/fst.sqlite")
+    evl.add_argument("--baseline", default="B3", choices=["B1", "B3"])
+    evl.add_argument("--sha", default=PINNED_SHA)
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -62,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_index(args)
     if args.command == "search":
         return cmd_search(args)
+    if args.command == "eval" and args.what == "retrieval":
+        return cmd_eval_retrieval(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

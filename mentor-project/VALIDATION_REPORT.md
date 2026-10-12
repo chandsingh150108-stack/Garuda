@@ -27,3 +27,8 @@
 | 2026-10-12 | Phase 5 latency | `python scripts/bench_search.py` (20 queries) | PASS p95<200ms | p50 21.2ms, p95 55.9ms (2nd run 23.6/38.9); recorded EVALUATION_RESULTS.md |
 | 2026-10-12 | Phase 5 G3 input | precision probe, lexical vs fused file-P@10 (5 queries) | RECORDED | fused ≥ lexical all 5 (0.2/0.1/0.1/0.1/0.1 vs 0.2/0.1/0.0/0.1/0.0); symbol rescued 2; n=5 directional only |
 | 2026-10-12 | Phase 5 suite | `pytest tests/ -q` | PASS 89/89 | 69 prior + 20 new green |
+| 2026-10-12 | Phase 6 gold | author 30-Q set from code reading | DONE | 8/6/6/4/6; all 22 answerable ranges read verbatim at SHA; 8 abstain items with recorded absence/history evidence; SHA-256 frozen in DECISIONS.md |
+| 2026-10-12 | Phase 6 validity | `pytest tests/test_gold.py -q` + counterfactual check | PASS | v1 validates clean; composition exact; CF set valid (renamed symbols at mapped lines); hash recorded |
+| 2026-10-12 | Phase 6 metrics | `pytest tests/test_metrics.py -q` | PASS | overlap unit, recall/MRR/symbol-hit/file-P, Wilson reference match |
+| 2026-10-12 | Phase 6 baselines | `mentor eval retrieval` B1/B3/CF-B3 | RECORDED | B1 R@10 0.341 / B3 0.424 / CF-B3 0.424 (n=22, intervals overlap — directional only); CF retrieval == original |
+| 2026-10-12 | Phase 6 suite | `pytest tests/ -q` | PASS 101/101 | 89 prior + 12 new green |

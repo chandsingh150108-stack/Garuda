@@ -369,6 +369,36 @@
 - Fallback: None (signals always emitted, even when weak).
 - Date: 2026-10-12
 
+## D6.1 Gold composition
+- Status: LOCKED (frozen; changes require v2 + SUPERSEDED entry)
+- Decision: 30 items pre-tuning — 8 where/how, 6 arch, 6 flow, 4 why (2 HISTORY-answerable with commit blame, 2 UNKNOWN abstain-expected), 6 unanswerable with recorded grep absence evidence. Every answerable range read verbatim at the pinned SHA before authoring.
+- Alternatives: Fewer items (rejected: 22 answerable is already the minimum for Wilson intervals with any width); tuning-first (rejected: unfalsifiable).
+- Evidence: `evals/gold/v1.yaml` validates clean against fst (paths exist, ranges in-bounds); composition test enforces 8/6/6/4/6.
+- Reason: Fixed target written before any retrieval/answer tuning.
+- Confidence: High (verified locations); Medium (rubric coverage of "understanding" is inherently partial).
+- Fallback: v2 with SUPERSEDED entry; never edit v1 in place.
+- Date: 2026-10-12
+
+## D6.2 Scoring unit + frozen hash
+- Status: LOCKED
+- Decision: Retrieval hit relevant iff its line range overlaps a gold range in the same file. Frozen `evals/gold/v1.yaml` SHA-256: `0389d55fb9811cdae33f3ec934baf7b523e3e38dbba09ef2fcc60412063b7762` (counterfactual `v1_counterfactual.yaml`: `aabf582ad4fe9c6022318a9492168f441783a8cd930c198d16f869d1931b6d75`, derived via `counterfactual_map.json`, validity-checked).
+- Alternatives: File-level relevance (rejected: too coarse; line overlap rewards precise chunks).
+- Evidence: Overlap rule implemented in `mentor/eval/metrics.py`; hash recorded here at freeze time.
+- Reason: Line overlap matches the citation granularity the product promises.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-12
+
+## D6.3 Statistics
+- Status: LOCKED
+- Decision: Every metric reported with n + Wilson 95% intervals (`mentor/eval/stats.py`); intervals that overlap mean "no detectable difference" (spec statistical honesty). Unanswerable items excluded from recall denominators (no ranges), counted for abstention later.
+- Alternatives: Point estimates only (rejected: n=22 misleads); bootstrap (rejected: overkill for proportions; study phase uses it where paired).
+- Evidence: Wilson unit test matches reference values.
+- Reason: 30 items cannot separate small effects; intervals make that visible.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-12
+
 ## D4.1 Chunk budget
 - Status: LOCKED
 - Decision: Max ~512 approximate tokens per chunk, tokens = characters // 4 of chunk `text` (deterministic approximation, recorded here). cAST split-then-merge: top-level AST units; oversized units split recursively at named-child boundaries; small adjacent siblings merged greedily while within budget. Code files (py/ts/tsx/js/jsx) via isolated AST plan (fresh `run_isolated` child per file — same containment as D3.2 after the 0.26.0 saga); other indexed text files (json/yaml/toml/md/etc.) via degraded line windows of 80 lines with 20-line overlap. A single leaf that cannot split within budget is emitted whole and flagged `is_exception=1` (recorded, queryable).

@@ -70,3 +70,12 @@
 
 ### Next
 - Phase 6: frozen 30-Q gold set + harness (B1/B3 baselines, counterfactual set, Wilson stats).
+
+## 2026-10-12 — Phase 6 (frozen gold set + harness) → GATE PASSED
+- Authored 30-Q v1 (8/6/6/4/6) from verbatim code reads + git history (constant-time auth, open registration) + repo-wide absence greps; SHA-256 frozen in DECISIONS.md (D6.1–D6.3).
+- Implemented `mentor/eval/{gold,metrics,stats,harness,baselines,counterfactual}.py` + `eval retrieval` CLI; built fst-cf manifest/parses/index pipeline for the contamination control.
+- Baselines: B1 R@10 0.341 / B3 0.424 / CF-B3 0.424 (n=22, intervals overlap — directional gain only; identical CF retrieval proves structure grounding). Identifier questions ~1.0, conceptual ones often miss (no stemming/summaries — documented floor).
+- Suite 101/101 green. Commit `phase-06: frozen gold set and retrieval baselines`.
+
+### Next
+- Phase 7: embedding decision gate G1 (licence checks + recall@10 benchmark; adopt or ship lexical-only).

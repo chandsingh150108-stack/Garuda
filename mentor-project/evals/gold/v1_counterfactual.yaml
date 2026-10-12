@@ -1,0 +1,435 @@
+version: 1
+items:
+- id: q01
+  category: where_how
+  question: How does user registration (`register_user`) work?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 146
+    end_line: 159
+  must_include:
+  - POST /signup-cf needs no login
+  - duplicate email -> 400
+  - crud.create_user_cf persists
+  reviewer_notes: Handler + route decorator read verbatim; prefix /users from line
+    29.
+  counterfactual_of: q01
+- id: q02
+  category: where_how
+  question: How are new users persisted (`create_user_cf` in crud)?
+  expected_status: answer
+  gold:
+  - path: backend/app/crud.py
+    start_line: 10
+    end_line: 17
+  must_include:
+  - password hashed via get_password_hash
+  - session add/commit/refresh
+  reviewer_notes: Body read verbatim.
+  counterfactual_of: q02
+- id: q03
+  category: where_how
+  question: How is password hashing configured and done?
+  expected_status: answer
+  gold:
+  - path: backend/app/core/security.py
+    start_line: 11
+    end_line: 16
+  - path: backend/app/core/security.py
+    start_line: 35
+    end_line: 36
+  must_include:
+  - pwdlib PasswordHash
+  - Argon2Hasher default with BcryptHasher fallback
+  - get_password_hash
+  reviewer_notes: Hasher order (Argon2 first) read verbatim.
+  counterfactual_of: q03
+- id: q04
+  category: where_how
+  question: How does login issue access tokens?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/login.py
+    start_line: 23
+    end_line: 42
+  must_include:
+  - POST /login/access-token-cf
+  - OAuth2PasswordRequestForm
+  - crud.authenticate
+  - inactive-user 400
+  - ACCESS_TOKEN_EXPIRE_MINUTES
+  - Token_cf response
+  reviewer_notes: Handler body read verbatim.
+  counterfactual_of: q04
+- id: q05
+  category: where_how
+  question: How are items created (`create_item`)?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/items.py
+    start_line: 61
+    end_line: 72
+  must_include:
+  - POST / route
+  - CurrentUser required
+  - owner_id set from current_user.id
+  - add/commit/refresh
+  reviewer_notes: Route decorator at line 61 verified in parses.
+  counterfactual_of: q05
+- id: q06
+  category: where_how
+  question: What is `SessionDep` and where does the DB session come from?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/deps.py
+    start_line: 21
+    end_line: 27
+  must_include:
+  - get_db yields Session(engine)
+  - SessionDep is Annotated Session with Depends(get_db)
+  reviewer_notes: Lines read verbatim.
+  counterfactual_of: q06
+- id: q07
+  category: where_how
+  question: How is the current user resolved from a token (`get_current_user`)?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/deps.py
+    start_line: 30
+    end_line: 46
+  must_include:
+  - jwt.decode with SECRET_KEY and ALGORITHM
+  - TokenPayload
+  - session.get by sub
+  - inactive-user check
+  reviewer_notes: Body read verbatim; line 36 has an upstream-comma except-clause
+    typo, not cited.
+  counterfactual_of: q07
+- id: q08
+  category: where_how
+  question: How are new-account emails sent during user creation?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 57
+    end_line: 78
+  must_include:
+  - duplicate-email 400
+  - crud.create_user_cf
+  - generate_new_account_email when emails_enabled
+  - send_email
+  reviewer_notes: Handler range read verbatim in Phase 2.
+  counterfactual_of: q08
+- id: q09
+  category: arch
+  question: How is the FastAPI application assembled from routers?
+  expected_status: answer
+  gold:
+  - path: backend/app/main.py
+    start_line: 21
+    end_line: 35
+  - path: backend/app/api/main.py
+    start_line: 6
+    end_line: 14
+  must_include:
+  - FastAPI app
+  - api_router mounted at API_V1_STR
+  - login/users/utils/items-cf routers included
+  reviewer_notes: Both files read verbatim.
+  counterfactual_of: q09
+- id: q10
+  category: arch
+  question: What database models exist and what tables do they use?
+  expected_status: answer
+  gold:
+  - path: backend/app/models.py
+    start_line: 51
+    end_line: 55
+  - path: backend/app/models.py
+    start_line: 87
+    end_line: 93
+  must_include:
+  - User_cf model table user
+  - Item_cf model table item
+  - table=True inferred names
+  reviewer_notes: Model classes read verbatim.
+  counterfactual_of: q10
+- id: q11
+  category: arch
+  question: How is application configuration managed?
+  expected_status: answer
+  gold:
+  - path: backend/app/core/config.py
+    start_line: 15
+    end_line: 88
+  must_include:
+  - Settings class in backend/app/core/config.py
+  reviewer_notes: Class span from parser; body not line-cited beyond location.
+  counterfactual_of: q11
+- id: q12
+  category: arch
+  question: What frontend pages exist and how is the signup page built?
+  expected_status: answer
+  gold:
+  - path: frontend/src/routes/signup.tsx
+    start_line: 1
+    end_line: 25
+  must_include:
+  - signup page exists
+  - TanStack Router createFileRoute
+  - zod schema form
+  - AuthLayout
+  reviewer_notes: Head read verbatim; sibling pages login/recover-password/reset-password
+    + _layout verified by directory listing.
+  counterfactual_of: q12
+- id: q13
+  category: arch
+  question: What services make up the deployment?
+  expected_status: answer
+  gold:
+  - path: compose.yml
+    start_line: 1
+    end_line: 20
+  - path: compose.yml
+    start_line: 34
+    end_line: 52
+  must_include:
+  - proxy (traefik)
+  - db (postgres:18)
+  - adminer
+  - backend
+  reviewer_notes: Service blocks read verbatim; keys verified via YAML parse.
+  counterfactual_of: q13
+- id: q14
+  category: arch
+  question: Which Python dependencies does the backend need?
+  expected_status: answer
+  gold:
+  - path: backend/pyproject.toml
+    start_line: 5
+    end_line: 20
+  must_include:
+  - fastapi[standard]
+  - sqlmodel
+  - pwdlib[argon2,bcrypt]
+  - pyjwt
+  - requires-python >=3.14
+  reviewer_notes: Dependency lines verified via grep + tomllib parse.
+  counterfactual_of: q14
+- id: q15
+  category: flow
+  question: Walk through user signup end to end.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 146
+    end_line: 159
+  - path: backend/app/crud.py
+    start_line: 10
+    end_line: 17
+  must_include:
+  - POST /users/signup-cf
+  - duplicate check
+  - hash + persist
+  - no login required
+  reviewer_notes: Both hops read verbatim; edge users.py->crud is import-resolved.
+  counterfactual_of: q15
+- id: q16
+  category: flow
+  question: Walk through login end to end.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/login.py
+    start_line: 23
+    end_line: 42
+  - path: backend/app/crud.py
+    start_line: 45
+    end_line: 60
+  - path: backend/app/core/security.py
+    start_line: 22
+    end_line: 26
+  must_include:
+  - OAuth2 form
+  - authenticate with timing-attack guard
+  - expiry
+  - HS256 JWT via create_access_token
+  reviewer_notes: All three hops read verbatim.
+  counterfactual_of: q16
+- id: q17
+  category: flow
+  question: Walk through creating an item.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/items.py
+    start_line: 61
+    end_line: 72
+  - path: backend/app/models.py
+    start_line: 87
+    end_line: 93
+  must_include:
+  - auth required (CurrentUser)
+  - owner set from caller
+  - Item_cf table
+  reviewer_notes: Handler + model read verbatim.
+  counterfactual_of: q17
+- id: q18
+  category: flow
+  question: Walk through updating your own password.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 103
+    end_line: 121
+  - path: backend/app/core/security.py
+    start_line: 29
+    end_line: 36
+  must_include:
+  - verify current password
+  - reject same-as-current
+  - hash + store new
+  - success message
+  reviewer_notes: Both ranges read verbatim.
+  counterfactual_of: q18
+- id: q19
+  category: flow
+  question: Walk through password recovery.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/login.py
+    start_line: 53
+    end_line: 74
+  - path: backend/app/api/routes/login.py
+    start_line: 77
+    end_line: 97
+  must_include:
+  - same response anti-enumeration
+  - reset token emailed
+  - token verified before update
+  reviewer_notes: Both handlers read verbatim.
+  counterfactual_of: q19
+- id: q20
+  category: flow
+  question: Walk through deleting your own account.
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 132
+    end_line: 143
+  must_include:
+  - superusers blocked with 403
+  - delete + commit
+  - success message
+  reviewer_notes: Handler read verbatim.
+  counterfactual_of: q20
+- id: q21
+  category: why
+  question: Why does `authenticate` verify a password even when the user does not
+    exist?
+  expected_status: answer
+  gold:
+  - path: backend/app/crud.py
+    start_line: 40
+    end_line: 52
+  must_include:
+  - constant-time
+  - enumeration attacks
+  - DUMMY_HASH
+  reviewer_notes: 'HISTORY: commit 689d7105 (2026-01-22, Sebastian Ramirez) ''Ensure
+    authentication takes constant time, to avoid enumeration attacks (#2105)''; code
+    comments at 40-41; blame confirms author/date.'
+  counterfactual_of: q21
+- id: q22
+  category: why
+  question: Why is user registration open without approval?
+  expected_status: answer
+  gold:
+  - path: backend/app/api/routes/users.py
+    start_line: 146
+    end_line: 159
+  must_include:
+  - registration enabled by default
+  - no approval step in handler
+  reviewer_notes: 'HISTORY: commit 1f686689 (2024-07-31, Alejandra) ''Remove USERS_OPEN_REGISTRATION
+    config, make registration enabled by default (#1274)''.'
+  counterfactual_of: q22
+- id: q23
+  category: why
+  question: Why was Argon2 chosen as the default password hasher instead of bcrypt?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'UNKNOWN: commit 730c6e9 states the change (pwdlib, Argon2 default,
+    bcrypt fallback) but records no rationale; no code comment. Correct behavior:
+    UNKNOWN, no fabrication. Absence checked via git log -S argon2 on security.py.'
+  counterfactual_of: q23
+- id: q24
+  category: why
+  question: Why are superusers forbidden from deleting themselves?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'UNKNOWN: rule at users.py:137-140; blame b81cec8e (2024-04-26,
+    Alejandra) ''Add delete_user_me endpoint and corresponding test cases (#1179)''
+    states no rationale for the guard.'
+  counterfactual_of: q24
+- id: q25
+  category: unanswerable
+  question: How does billing work in this app?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: grep -ri billing across fst returns no files (checked
+    2026-10-12). No billing code exists.'
+  counterfactual_of: q25
+- id: q26
+  category: unanswerable
+  question: How do I sign in with a passkey?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: grep for passkey|webauthn|totp|two-factor|authenticator
+    returns no files. Only password + JWT auth exists.'
+  counterfactual_of: q26
+- id: q27
+  category: unanswerable
+  question: Where are in-app notifications implemented?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: grep for notification returns no files repo-wide. Only
+    emails exist.'
+  counterfactual_of: q27
+- id: q28
+  category: unanswerable
+  question: How are organizations and teams modeled?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: no organization/team domain concept; sole ''organization''
+    hits are GitHub-org workflow text (guard-dependencies.yml). Single-tenant user/item
+    model only.'
+  counterfactual_of: q28
+- id: q29
+  category: unanswerable
+  question: Where is the audit log for admin actions?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: grep for audit_log returns no files. No audit logging
+    exists.'
+  counterfactual_of: q29
+- id: q30
+  category: unanswerable
+  question: How do I enable two-factor authentication?
+  expected_status: abstain
+  gold: []
+  must_include: []
+  reviewer_notes: 'Absence: no 2FA/totp/authenticator code (see q26 evidence). Password-only
+    auth.'
+  counterfactual_of: q30
+derived_from:
+  gold: v1.yaml
+  map: counterfactual_map.json
+  identifiers: 20
+  routes: 5
