@@ -339,6 +339,36 @@
 - Fallback: `retries=0` restores single-attempt behavior; nothing else changes.
 - Date: 2026-10-12
 
+## D4.1 Chunk budget
+- Status: LOCKED
+- Decision: Max ~512 approximate tokens per chunk, tokens = characters // 4 of chunk `text` (deterministic approximation, recorded here). cAST split-then-merge: top-level AST units; oversized units split recursively at named-child boundaries; small adjacent siblings merged greedily while within budget. Code files (py/ts/tsx/js/jsx) via isolated AST plan (fresh `run_isolated` child per file — same containment as D3.2 after the 0.26.0 saga); other indexed text files (json/yaml/toml/md/etc.) via degraded line windows of 80 lines with 20-line overlap. A single leaf that cannot split within budget is emitted whole and flagged `is_exception=1` (recorded, queryable).
+- Alternatives: Fixed token windows (rejected: splits mid-syntax, citations point at fragments); AST-only with no fallback (rejected: config files carry ports/deps facts needed for arch questions).
+- Evidence: cAST paper V12 (principle); FTS5 docs verified live (UNINDEXED, unicode61, bm25 on SQLite 3.50.4, 2026-10-12) [OFFICIAL].
+- Reason: Chunks align to syntax so citations point at real units; every indexed line lands in some chunk.
+- Confidence: High (principle); Medium (gain transfer — measured Phase 5+).
+- Fallback: Line windows for everything (degraded mode), recorded as such.
+- Date: 2026-10-12
+
+## D4.2 Two text forms
+- Status: LOCKED
+- Decision: `text` = exact original source lines (citation/display only). `embed_text` = `header + "\n" + text` where header = repo path + overlapping symbol qualnames. Citations never use `embed_text`; validator (Phase 9) will reject header-only evidence.
+- Alternatives: Single text with header prepended (rejected: displayed citation would show text the file does not contain at those lines).
+- Evidence: Spec Phase 4; Phase 3 line-invariant machinery.
+- Reason: Displayed citations must be byte-exact reproductions of source lines.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-12
+
+## D4.3 Chunk identity
+- Status: LOCKED
+- Decision: `chunk_id = sha256(repo_sha + "\n" + path + "\n" + str(start) + "\n" + str(end) + "\n" + content_hash)[:16]`, `content_hash = sha256(text)`. Newline-joined (unambiguous vs raw concatenation). Rebuilds are byte-identical by construction (no timestamps stored anywhere).
+- Alternatives: Raw concatenation (rejected: ambiguous boundaries, e.g. path "a/b"+lines vs "a"+"/b" lines); UUIDs (rejected: non-deterministic, breaks idempotence gate).
+- Evidence: Implemented in `mentor/index/hashing.py`; idempotence test compares two independent builds.
+- Reason: Deterministic identity is the freshness/invalidation key (Phase 17).
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-12
+
 ## D3.3 Edge labels
 - Status: LOCKED
 - Decision: Import edges are `resolved` only when the resolved target file exists in the repository (relative imports + `backend/`-rooted absolute imports for Py; relative + `@/`-aliased for TS). Everything name-based is `likely`. No other label permitted.

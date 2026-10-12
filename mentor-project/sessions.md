@@ -51,3 +51,13 @@
 
 ### Next
 - Phase 4: chunking + SQLite index store (cAST split-then-merge, FTS5, identifiers, hashing, CLI).
+
+## 2026-10-12 — Phase 4 (chunking + SQLite index) → GATE PASSED
+- Research: FTS5 docs + live probe (UNINDEXED, unicode61, bm25, SQLite 3.50.4); chars//4 tokens; identifier splitting rules.
+- Implemented: `mentor/index/{identifiers,hashing,chunker,store,schema.sql}`, `mentor/cli.py` (`index` command). Isolated AST plans per file (D3.2 containment reused); line windows (80/20, budget-bounded) for non-code; exact-text citations vs header embed separation; deterministic chunk IDs.
+- Bugs found by measurement (own logic, fixed + regression-tested): (1) duplicate chunk_ids — 130 same-line AST children re-emitted one line 130x (single-line atomicity + dedupe fix); (2) fixed 80-line windows exceeded budget on long lines (64 violations → budget-bounded windows fix).
+- Index: 208 files, 1279 chunks (261 ast/1018 lines), 609 symbols, 1618 edges, 23 routes, 2 models, 8 config_facts, failed=[]; max non-exception 512 tokens; 4 recorded single-line exceptions; second build byte-identical (dump-equal).
+- Suite 69/69 green. Commit `phase-04: chunker and sqlite index`.
+
+### Next
+- Phase 5: lexical/symbol/path retrieval + RRF fusion + confidence signals (D5.1–D5.3).
