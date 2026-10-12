@@ -1,0 +1,143 @@
+{
+ "path": "py_models.py",
+ "language": "python",
+ "status": "parsed",
+ "file_lines": 21,
+ "has_error": false,
+ "symbols": [
+  {
+   "kind": "class",
+   "name": "WidgetBase",
+   "qualname": "WidgetBase",
+   "parent": null,
+   "start_line": 5,
+   "end_line": 7,
+   "signature_line": 5,
+   "docstring": null,
+   "params": null,
+   "bases": [
+    "SQLModel"
+   ],
+   "decorators": [],
+   "calls": []
+  },
+  {
+   "kind": "class",
+   "name": "Widget",
+   "qualname": "Widget",
+   "parent": null,
+   "start_line": 10,
+   "end_line": 12,
+   "signature_line": 10,
+   "docstring": null,
+   "params": null,
+   "bases": [
+    "WidgetBase"
+   ],
+   "decorators": [],
+   "calls": []
+  },
+  {
+   "kind": "class",
+   "name": "Named",
+   "qualname": "Named",
+   "parent": null,
+   "start_line": 15,
+   "end_line": 17,
+   "signature_line": 15,
+   "docstring": null,
+   "params": null,
+   "bases": [
+    "WidgetBase"
+   ],
+   "decorators": [],
+   "calls": []
+  },
+  {
+   "kind": "class",
+   "name": "Plain",
+   "qualname": "Plain",
+   "parent": null,
+   "start_line": 20,
+   "end_line": 21,
+   "signature_line": 20,
+   "docstring": null,
+   "params": null,
+   "bases": [
+    "SQLModel"
+   ],
+   "decorators": [],
+   "calls": []
+  }
+ ],
+ "imports": [
+  {
+   "module": "sqlmodel",
+   "names": [
+    {
+     "name": "Field",
+     "alias": null
+    },
+    {
+     "name": "SQLModel",
+     "alias": null
+    }
+   ],
+   "line": 2,
+   "level": 0,
+   "resolved": null
+  }
+ ],
+ "routes": [],
+ "router_defs": [],
+ "include_routers": [],
+ "models": [
+  {
+   "class": "Widget",
+   "qualname": "Widget",
+   "lines": [
+    10,
+    12
+   ],
+   "table": "widget",
+   "table_inferred": true,
+   "bases": [
+    "WidgetBase"
+   ],
+   "fields": [
+    {
+     "name": "id",
+     "type": "int",
+     "line": 11
+    },
+    {
+     "name": "owner",
+     "type": "str",
+     "line": 12
+    }
+   ],
+   "file": "py_models.py"
+  },
+  {
+   "class": "Named",
+   "qualname": "Named",
+   "lines": [
+    15,
+    17
+   ],
+   "table": "custom_names",
+   "table_inferred": false,
+   "bases": [
+    "WidgetBase"
+   ],
+   "fields": [
+    {
+     "name": "code",
+     "type": "str",
+     "line": 17
+    }
+   ],
+   "file": "py_models.py"
+  }
+ ]
+}

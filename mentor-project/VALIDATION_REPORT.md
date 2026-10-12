@@ -11,3 +11,10 @@
 | 2026-10-11 | Phase 2 acquire | `python -m mentor.ingest.acquire --repo data/repos/fst --sha 7257e60...` | PASS | HEAD matches pinned SHA, tree clean |
 | 2026-10-11 | Phase 2 manifest | manifest build + scanner self-check | PASS | 252 entries (matches walk), 208 indexed / 41 extension / 2 filename / 1 lockfile / 0 secret; manifest has zero scanner findings, no secret values |
 | 2026-10-11 | Phase 2 counterfactual | integrity check (ident `\b`, route `(?!-cf)` guard) | PASS | 20 identifiers + 5 routes (signup prioritized) + 3 config; zero genuine old-name leftovers; 984 new-name occurrences |
+| 2026-10-11 | Phase 3 goldens | `pytest tests/test_parse_python.py tests/test_parse_ts.py tests/test_parse_config.py -q` | PASS 30/30 | 10 frozen goldens exact; review caught+fixed 3 extractor bugs (docstring inversion, TS body traversal, nested-const noise) |
+| 2026-10-11 | Phase 3 invariant | `check_ranges` over 10 goldens + all fst parsed files | PASS 0 violations | 1<=start<=end<=lines, signature==start, name-on-signature-line |
+| 2026-10-11 | Phase 3 worker | timeout mechanism + pathological nesting + isolation | PASS | `run_isolated` sleep→timeout; 3000-deep brackets completes inside 10s; symlink/size/path guards |
+| 2026-10-11 | Phase 3 secret exclusion | golden values + fst config blob scan | PASS | `supersecret-value`/`${SECRET_KEY`/`abc123` absent; scanner finds nothing in config output |
+| 2026-10-12 | Phase 3 runtime crash saga | 0.26.0 native deaths (Event 1000, 0xC0000005) | RECORDED, resolved by downgrade | test_users.py whole-file ~12/12 deaths, parts fine; identical fragment 3 pass/2 crash (flaky); 0.25.2: 4/4 clean both killers |
+| 2026-10-12 | Phase 3 coverage | `python -m mentor.parse.cli --repo data/repos/fst --sha 7257e60` | PASS 152/152 (100.0%) | 0 failed; 23 routes (incl. POST /users/signup users.py:146 register_user); 2 models (User, Item); 675 import + 943 call edges. Earlier 0.26.0 runs: 98.68/99.34/98.03/98.68 (flaky) |
+| 2026-10-12 | Phase 3 suite | `pytest tests/ -q` | PASS 43/43 | 13 Phase-2 + 30 Phase-3 green |

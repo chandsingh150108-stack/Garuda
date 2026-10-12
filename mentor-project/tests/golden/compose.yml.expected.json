@@ -1,0 +1,25 @@
+{
+ "status": "parsed",
+ "services": {
+  "db": {
+   "image": "postgres:18",
+   "ports": [
+    "5432:5432"
+   ],
+   "environment_keys": [
+    "POSTGRES_DB",
+    "POSTGRES_PASSWORD"
+   ]
+  },
+  "backend": {
+   "image": "backend:latest",
+   "ports": [],
+   "environment_keys": [
+    "API_TOKEN",
+    "PROJECT_NAME",
+    "SECRET_KEY"
+   ]
+  }
+ },
+ "file": "compose.yml"
+}

@@ -298,3 +298,53 @@
 - Confidence: Medium (rename-everywhere can touch generated client code; harmless since the copy is never executed).
 - Fallback: Delete `fst-cf` + map and regenerate (rollback procedure); never hand-edit the copy.
 - Date: 2026-10-11
+
+## D3.1 Grammars
+- Status: LOCKED
+- Decision: `tree-sitter==0.26.0` runtime + `tree-sitter-python==0.25.0` + `tree-sitter-typescript==0.23.2` (covers `typescript` and `tsx` via `language_typescript()`/`language_tsx()`); config via `PyYAML==6.0.3` (MIT) + stdlib `tomllib`/`json`. All pinned in `requirements.txt`.
+- Alternatives: Older `py-tree-sitter` API (rejected: 0.2x line retired; 0.25+ unified `Parser(Language(...))` API verified working on this machine); LSP/CodeQL now (rejected: Future enrichers per A2).
+- Evidence: Installed + probed 2026-10-11: `Parser(Language(tsp.language()))` parses Py classes/methods; TSX `export function` + `fetch("/api/x")` parses without error. Licences: METADATA classifier MIT (runtime), `License: MIT` on both grammar packages and PyYAML [OFFICIAL].
+- Reason: Uniform multi-lang, error-tolerant, exact 0-based row/col positions (line = row+1).
+- Confidence: High
+- Fallback: Regex extraction for a language with no grammar, labelled lower confidence (per A2).
+- Date: 2026-10-11
+
+## D3.2 Worker isolation
+- Status: LOCKED
+- Decision: Parse each file in a child `multiprocessing.Process` (spawn) with per-file timeout 10s and 1MB size cap enforced in the parent. Crash/timeout/oversize marks the file `parse_failed` and indexing continues. `data/parses/<sha>.json` carries per-file status for Phase 4.
+- Alternatives: Threads (rejected: a native crash/hang kills the indexer); larger timeout (rejected: 10s is generous; tree-sitter is linear-time, hangs mean pathological input).
+- Evidence: Spec Phase 3 + tree-sitter linear-time property; pathological-nesting test proves the timeout path.
+- Reason: A malformed file must never crash or hang the indexer.
+- Confidence: High
+- Fallback: Mark `parse_failed`, continue; Phase 4 skips such files with reason recorded.
+- Date: 2026-10-11
+
+## D3.1 amendment — runtime downgrade 0.26.0 → 0.25.2 (SUPERSEDES the D3.1 version pin)
+- Status: LOCKED
+- Decision: `tree-sitter==0.25.2` (grammars unchanged: `tree-sitter-python==0.25.0`, `tree-sitter-typescript==0.23.2`). `requirements.txt` updated.
+- Alternatives: Stay on 0.26.0 and exclude crashing files (rejected: 0.26.0 killed workers non-deterministically — identical input passed 3/5 and crashed 2/5 in-process — so any coverage number on 0.26.0 was unrepeatable); upgrade grammars instead (rejected: grammars were never implicated; the runtime swap alone fixed it).
+- Evidence: 2026-10-12 — `test_users.py` whole-file extract died ~12/12 attempts on 0.26.0 (in-process + workers, hang-or-0xC0000005 in python314.dll per Windows Event 1000) while all 27 functions parsed individually and all sub-ranges parsed; same file extracts 4/4 clean on 0.25.2; full-repo CLI on 0.25.2: 152/152 (100%). Golden outputs byte-identical across runtimes (same node shapes).
+- Reason: Deterministic 100% beats flaky 98-99%. Per rollback rule, the previous version is pinned and the change recorded here.
+- Confidence: High (measured, repeated)
+- Fallback: If 0.25.2 shows any native death, the worker still contains it as `parse_failed` and the file is recorded.
+- Date: 2026-10-12
+
+## D3.2 clarification — one retry of transient worker deaths
+- Status: LOCKED (clarifies D3.2, does not weaken it)
+- Decision: `parse_many` retries crash/timeout failures once in a fresh process (`attempts` recorded per file). Deterministic skips (size, path-escape, unsupported) never retry. A file failing twice is `parse_failed` exactly per D3.2.
+- Alternatives: No retry (rejected: proven-transient native deaths would permanently exclude parseable files); unlimited retries (rejected: a truly pathological file must fail fast).
+- Evidence: `sdk.gen.ts` failed-then-passed across runs on 0.26.0; retry converts transients into parses without changing any success output.
+- Reason: Fresh-process retry distinguishes transient worker death from unparseable input.
+- Confidence: Medium-high
+- Fallback: `retries=0` restores single-attempt behavior; nothing else changes.
+- Date: 2026-10-12
+
+## D3.3 Edge labels
+- Status: LOCKED
+- Decision: Import edges are `resolved` only when the resolved target file exists in the repository (relative imports + `backend/`-rooted absolute imports for Py; relative + `@/`-aliased for TS). Everything name-based is `likely`. No other label permitted.
+- Alternatives: Trusting unresolved imports as resolved (rejected: dishonest); full type resolution (rejected: needs LSP/build, Future).
+- Evidence: fst verified: `from app import crud` resolves to `backend/app/crud.py`; `settings.API_V1_STR` app prefix is dynamic so full URL prefixes stay `prefix_unknown`.
+- Reason: Tours (Phase 13) may state `calls` only on resolved edges.
+- Confidence: High
+- Fallback: `likely` label; unresolved imports recorded with `target: null`.
+- Date: 2026-10-11

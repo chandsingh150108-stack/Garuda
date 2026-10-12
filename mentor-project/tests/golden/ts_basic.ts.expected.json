@@ -1,0 +1,128 @@
+{
+ "path": "ts_basic.ts",
+ "language": "typescript",
+ "status": "parsed",
+ "file_lines": 17,
+ "has_error": false,
+ "symbols": [
+  {
+   "kind": "function",
+   "name": "greet",
+   "qualname": "greet",
+   "parent": null,
+   "start_line": 6,
+   "end_line": 9,
+   "signature_line": 6,
+   "docstring": null,
+   "exported": true,
+   "decorators": [],
+   "params": null,
+   "calls": [
+    {
+     "name": "name.toUpperCase",
+     "line": 7
+    }
+   ]
+  },
+  {
+   "kind": "const",
+   "name": "helper",
+   "qualname": "helper",
+   "parent": null,
+   "start_line": 11,
+   "end_line": 11,
+   "signature_line": 11,
+   "docstring": null,
+   "exported": true,
+   "decorators": [],
+   "params": null,
+   "calls": [],
+   "const_kind": "arrow"
+  },
+  {
+   "kind": "class",
+   "name": "Store",
+   "qualname": "Store",
+   "parent": null,
+   "start_line": 13,
+   "end_line": 17,
+   "signature_line": 13,
+   "docstring": null,
+   "exported": false,
+   "decorators": [],
+   "params": null,
+   "calls": []
+  },
+  {
+   "kind": "method",
+   "name": "load",
+   "qualname": "Store.load",
+   "parent": "Store",
+   "start_line": 14,
+   "end_line": 16,
+   "signature_line": 14,
+   "docstring": null,
+   "exported": false,
+   "decorators": [],
+   "params": null,
+   "calls": []
+  }
+ ],
+ "imports": [
+  {
+   "module": "react",
+   "names": [
+    {
+     "name": "React",
+     "alias": null
+    }
+   ],
+   "line": 1,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "./hooks",
+   "names": [
+    {
+     "name": "useState",
+     "alias": null
+    },
+    {
+     "name": "useEffect",
+     "alias": "fx"
+    }
+   ],
+   "line": 2,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "../lib/utils",
+   "names": [
+    {
+     "name": "*",
+     "alias": "utils"
+    }
+   ],
+   "line": 3,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "@/lib/x",
+   "names": [
+    {
+     "name": "x",
+     "alias": null
+    }
+   ],
+   "line": 4,
+   "level": 0,
+   "resolved": null
+  }
+ ],
+ "routes": [],
+ "models": [],
+ "client_calls": []
+}

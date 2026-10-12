@@ -1,0 +1,12 @@
+{
+ "status": "parsed",
+ "dependencies": [
+  "fastapi>=0.115",
+  "sqlmodel>=0.0.22"
+ ],
+ "scripts": {
+  "serve": "demo:main"
+ },
+ "requires_python": ">=3.12",
+ "file": "pyproject.toml"
+}

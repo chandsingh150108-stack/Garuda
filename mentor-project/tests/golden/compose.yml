@@ -1,0 +1,16 @@
+# Golden fixture. ALL values below are FAKE placeholders for testing the
+# secret-exclusion rule (names emitted, values never). Not real credentials.
+services:
+  db:
+    image: postgres:18
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=supersecret-value
+      - POSTGRES_DB=app
+  backend:
+    image: backend:latest
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?Variable not set}
+      PROJECT_NAME: demo
+      API_TOKEN: abc123

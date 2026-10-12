@@ -1,0 +1,90 @@
+{
+ "path": "py_imports.py",
+ "language": "python",
+ "status": "parsed",
+ "file_lines": 9,
+ "has_error": false,
+ "symbols": [],
+ "imports": [
+  {
+   "module": "os",
+   "names": [
+    {
+     "name": "os",
+     "alias": null
+    }
+   ],
+   "line": 2,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "a.b",
+   "names": [
+    {
+     "name": "a.b",
+     "alias": "c"
+    }
+   ],
+   "line": 3,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "m",
+   "names": [
+    {
+     "name": "x",
+     "alias": null
+    },
+    {
+     "name": "y",
+     "alias": "z"
+    }
+   ],
+   "line": 4,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "",
+   "names": [
+    {
+     "name": "sibling",
+     "alias": null
+    }
+   ],
+   "line": 5,
+   "level": 1,
+   "resolved": null
+  },
+  {
+   "module": "pkg",
+   "names": [
+    {
+     "name": "thing",
+     "alias": null
+    }
+   ],
+   "line": 6,
+   "level": 2,
+   "resolved": null
+  },
+  {
+   "module": "lib",
+   "names": [
+    {
+     "name": "*",
+     "alias": null
+    }
+   ],
+   "line": 7,
+   "level": 0,
+   "resolved": null
+  }
+ ],
+ "routes": [],
+ "router_defs": [],
+ "include_routers": [],
+ "models": []
+}

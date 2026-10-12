@@ -40,3 +40,14 @@
 
 ### Next
 - Phase 3: parser + symbol model (tree-sitter Py/TS, routes/models, 10s worker timeout, golden tests).
+
+## 2026-10-11/12 — Phase 3 (parser + symbol model) → GATE PASSED
+- Research: tree-sitter 0.26.0/MIT + grammars MIT probed live (API, node shapes for imports/decorators/class-kwargs/TS-calls); repo patterns code-read (decorator routes, SQLModel table=True inferred tables, compose.yml actual layout differing from spec names).
+- Implemented: `mentor/parse/{treesitter,py_extract,ts_extract,config_extract,edges,parse_worker,cli}.py`, `requirements.txt` (pins), `mentor/config.py` parser limits, 10 golden fixtures + expected outputs, 30 tests.
+- Golden review caught 3 real bugs before freezing: inverted `_docstring` condition, TS function bodies never descended (empty client_calls), nested consts recorded as symbols.
+- Native-crash saga: 0.26.0 segfaulted (0xC0000005, Event 1000) — test_users.py whole-file ~12/12 deaths while parts parsed; identical fragment 3 pass/2 crash (proven flaky, not logic). Contained every time by the worker (D3.2 vindicated). Resolved: runtime downgrade to 0.25.2 (4/4 clean, full CLI 152/152). Recorded as D3.1 amendment + D3.2 retry clarification (one fresh-process retry, persistent failures stay parse_failed).
+- Coverage: 152/152 (100.0%), 0 failed; 23 routes (POST /users/signup users.py:146 register_user verified); 2 models (User, Item); 675 import + 943 call edges; invariant 0 violations; secret exclusion clean.
+- Suite 43/43 green. Commit `phase-03: parser and symbol model`.
+
+### Next
+- Phase 4: chunking + SQLite index store (cAST split-then-merge, FTS5, identifiers, hashing, CLI).

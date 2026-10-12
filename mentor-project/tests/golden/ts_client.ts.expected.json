@@ -1,0 +1,96 @@
+{
+ "path": "ts_client.ts",
+ "language": "typescript",
+ "status": "parsed",
+ "file_lines": 17,
+ "has_error": false,
+ "symbols": [
+  {
+   "kind": "function",
+   "name": "login",
+   "qualname": "login",
+   "parent": null,
+   "start_line": 3,
+   "end_line": 8,
+   "signature_line": 3,
+   "docstring": null,
+   "exported": true,
+   "decorators": [],
+   "params": null,
+   "calls": [
+    {
+     "name": "fetch",
+     "line": 4
+    }
+   ]
+  },
+  {
+   "kind": "function",
+   "name": "createItem",
+   "qualname": "createItem",
+   "parent": null,
+   "start_line": 10,
+   "end_line": 13,
+   "signature_line": 10,
+   "docstring": null,
+   "exported": true,
+   "decorators": [],
+   "params": null,
+   "calls": [
+    {
+     "name": "axios.post",
+     "line": 11
+    }
+   ]
+  },
+  {
+   "kind": "function",
+   "name": "localOnly",
+   "qualname": "localOnly",
+   "parent": null,
+   "start_line": 15,
+   "end_line": 17,
+   "signature_line": 15,
+   "docstring": null,
+   "exported": true,
+   "decorators": [],
+   "params": null,
+   "calls": [
+    {
+     "name": "compute",
+     "line": 16
+    }
+   ]
+  }
+ ],
+ "imports": [
+  {
+   "module": "axios",
+   "names": [
+    {
+     "name": "axios",
+     "alias": null
+    }
+   ],
+   "line": 1,
+   "level": 0,
+   "resolved": null
+  }
+ ],
+ "routes": [],
+ "models": [],
+ "client_calls": [
+  {
+   "callee": "fetch",
+   "path": "/api/login/access-token",
+   "line": 4,
+   "file": "ts_client.ts"
+  },
+  {
+   "callee": "axios.post",
+   "path": "/api/items",
+   "line": 11,
+   "file": "ts_client.ts"
+  }
+ ]
+}

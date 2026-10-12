@@ -1,0 +1,190 @@
+{
+ "path": "py_routes.py",
+ "language": "python",
+ "status": "parsed",
+ "file_lines": 28,
+ "has_error": false,
+ "symbols": [
+  {
+   "kind": "function",
+   "name": "register_user",
+   "qualname": "register_user",
+   "parent": null,
+   "start_line": 11,
+   "end_line": 13,
+   "signature_line": 11,
+   "docstring": "\"\"\"Create a user.\"\"\"",
+   "params": "(payload: UserRegister)",
+   "bases": null,
+   "decorators": [
+    {
+     "text": "@router.post(\"/signup\", response_model=UserPublic)",
+     "line": 10
+    }
+   ],
+   "calls": [
+    {
+     "name": "create_user",
+     "line": 13
+    }
+   ]
+  },
+  {
+   "kind": "function",
+   "name": "read_users",
+   "qualname": "read_users",
+   "parent": null,
+   "start_line": 17,
+   "end_line": 18,
+   "signature_line": 17,
+   "docstring": null,
+   "params": "()",
+   "bases": null,
+   "decorators": [
+    {
+     "text": "@router.get(\"/\")",
+     "line": 16
+    }
+   ],
+   "calls": []
+  },
+  {
+   "kind": "function",
+   "name": "clear_cache",
+   "qualname": "clear_cache",
+   "parent": null,
+   "start_line": 22,
+   "end_line": 23,
+   "signature_line": 22,
+   "docstring": null,
+   "params": "()",
+   "bases": null,
+   "decorators": [
+    {
+     "text": "@bare.delete(\"/cache\")",
+     "line": 21
+    }
+   ],
+   "calls": []
+  },
+  {
+   "kind": "function",
+   "name": "health",
+   "qualname": "health",
+   "parent": null,
+   "start_line": 27,
+   "end_line": 28,
+   "signature_line": 27,
+   "docstring": null,
+   "params": "()",
+   "bases": null,
+   "decorators": [
+    {
+     "text": "@api_router.get(\"/health\")",
+     "line": 26
+    }
+   ],
+   "calls": []
+  }
+ ],
+ "imports": [
+  {
+   "module": "fastapi",
+   "names": [
+    {
+     "name": "APIRouter",
+     "alias": null
+    }
+   ],
+   "line": 2,
+   "level": 0,
+   "resolved": null
+  },
+  {
+   "module": "external",
+   "names": [
+    {
+     "name": "api_router",
+     "alias": null
+    }
+   ],
+   "line": 4,
+   "level": 0,
+   "resolved": null
+  }
+ ],
+ "routes": [
+  {
+   "method": "post",
+   "path": "/signup",
+   "handler": "register_user",
+   "handler_lines": [
+    11,
+    13
+   ],
+   "decorator_line": 10,
+   "router_var": "router",
+   "file": "py_routes.py",
+   "router_prefix": "/users",
+   "prefix_unknown": false
+  },
+  {
+   "method": "get",
+   "path": "/",
+   "handler": "read_users",
+   "handler_lines": [
+    17,
+    18
+   ],
+   "decorator_line": 16,
+   "router_var": "router",
+   "file": "py_routes.py",
+   "router_prefix": "/users",
+   "prefix_unknown": false
+  },
+  {
+   "method": "delete",
+   "path": "/cache",
+   "handler": "clear_cache",
+   "handler_lines": [
+    22,
+    23
+   ],
+   "decorator_line": 21,
+   "router_var": "bare",
+   "file": "py_routes.py",
+   "router_prefix": "",
+   "prefix_unknown": false
+  },
+  {
+   "method": "get",
+   "path": "/health",
+   "handler": "health",
+   "handler_lines": [
+    27,
+    28
+   ],
+   "decorator_line": 26,
+   "router_var": "api_router",
+   "file": "py_routes.py",
+   "router_prefix": null,
+   "prefix_unknown": true
+  }
+ ],
+ "router_defs": [
+  {
+   "var": "router",
+   "prefix": "/users",
+   "prefix_known": true,
+   "line": 6
+  },
+  {
+   "var": "bare",
+   "prefix": "",
+   "prefix_known": true,
+   "line": 7
+  }
+ ],
+ "include_routers": [],
+ "models": []
+}

@@ -1,0 +1,13 @@
+{
+  "name": "demo-frontend",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
