@@ -36,3 +36,18 @@ Rule: adopt dense iff fused Recall@10 exceeds B3 by ≥5pp AND full CPU embed <3
 | jina-code-embeddings-0.5b | non-commercial (V15) | not attempted | needs GPU + trust_remote_code — FAIL | REJECT |
 
 Outcome: G1 REJECTED. `DENSE_MODEL = "none"`. dense.py remains a tested-but-disabled path (6 unit tests, fake encoder). Eval tooling (torch/ST) pinned in `requirements-eval.txt`, never in shipped `requirements.txt`. B3 R@10 0.424 stands as the floor for Phase 8+.
+
+## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
+
+Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.
+
+| Model | Peak VRAM @8K (≤7.0 GB) | Schema validity, no repair (≥90%) | Sustained 10 min | Q latency mean / TTFT | Verdict |
+|---|---|---|---|---|---|
+| Qwen2.5-Coder-7B-Instruct Q4_K_M (~4.7 GB, Apache-2.0) | 4814 MiB (4.70 GB) — idle-loaded 4793, 4K 4814, 8K 4814 ✓ | 22/22 = 1.000 [0.85, 1.00] ✓ | 288 it, 51.9 tok/s mean/p50 54.6, temp 68–86 °C, power ≤70.5 W (max 100 W), no throttle signal ✓ | 2.55 s / 0.10 s | QUALIFIED fallback |
+| Qwen3-4B-Instruct Q4_K_M (~2.5 GB, Apache-2.0, `/no_think`) | 3658 MiB (3.57 GB) — idle-loaded 3642, 4K 3658, 8K 3658 ✓ | 22/22 = 1.000 [0.85, 1.00] ✓ | 345 it, 82.9 tok/s mean/p50 83.1, temp 54–87 °C, power 62–71 W, no throttle signal ✓ | 0.94 s / 0.13 s | G2 WINNER (tiebreak: lower VRAM) |
+
+Commands: `python scripts/bench_llm.py --provider llamacpp --endpoint http://127.0.0.1:8080 --model qwen2.5-coder-7b-instruct-q4_k_m --ctx 8192 --gold evals/gold/v1.yaml --sustained-minutes 10 --timeout 300` (4B adds `--no-think-suffix /no_think`).
+
+Rule applied (spec G2): both satisfy (a)+(b)+(c); validity tied at ceiling 1.000 → tiebreak lower peak VRAM → Qwen3-4B. `mentor/config.py`: `LLM_MODEL = "qwen3-4b-instruct-q4_k_m"`, `LLM_CTX = 8192`, `LLM_SYSTEM_SUFFIX = "/no_think"`.
+
+Caveats (open for Phase 9 answer-quality eval): (1) validity probe checks shape only, not code-answer correctness — the code-specialized 7B may answer better; revisit with evidence if Phase 9 correctness comparison favors it. (2) 4B requires `/no_think`: without it, thinking tokens exhaust the budget and content arrives empty (measured 5.1 s + empty vs 0.3 s + valid JSON). (3) nvidia-smi read 0 MiB once with the 4B server idle-running (driver/Vulkan attribution quirk); in-bench readings under load (3642–3658) are the trusted numbers.

@@ -413,6 +413,56 @@
 - Fallback: B3 lexical-only; revisit on server-tier hardware (GPU) or lighter permissive models, via new G1 run.
 - Date: 2026-10-12
 
+## D8.0 Serving deviation (Ollama blocked -> llama.cpp server)
+- Status: LOCKED (for G2 measurement; Ollama remains the documented default)
+- Decision: G2 measurements run on llama.cpp `llama-server` (Vulkan backend, ggml-org nightly b11429, MIT) with GGUF weights from official Qwen HF repos, because the Ollama Windows installer (1.5 GB) downloads at ~0.06 MB/s from here (~300 h; measured over 25 min with resume). The gateway ships BOTH adapters: Ollama (spec default, loopback, for when installable) and llama-server (OpenAI-compatible, A17 fallback, used live now). G2 numbers are labeled with backend `llamacpp-vulkan`; Ollama/CUDA re-measurement is future work when the installer is obtainable.
+- Alternatives: Wait for Ollama (rejected: blocks the phase on a ~300 h download); CPU-only inference (rejected: cannot measure GPU VRAM, the point of G2); untrusted mirror downloads (rejected: T8 supply-chain violation).
+- Evidence: Measured throughput (103 MB in 25 min, resume-capable); llama.cpp v0.6.0/b11429 release notes + API asset list (vulkan-x64 33 MB); nvcuda.dll present (driver 610.74) so no CUDA toolkit needed for Vulkan.
+- Reason: Same GGUF weights + same JSON-schema contract make the VRAM/schema/throughput answers transfer with a stated backend caveat.
+- Confidence: Medium (backend differs; VRAM physics does not)
+- Fallback: If Vulkan offload fails, CPU-only llama-server for schema-validity only, VRAM recorded as unmeasured.
+- Date: 2026-10-12
+
+## D8.1 Default model
+- Status: SUPERSEDED by G2 outcome 2026-10-15 (7B remains qualified fallback)
+- Decision: Default candidate Qwen2.5-Coder-7B-Instruct Q4_K_M GGUF (Apache-2.0 per V16; ~4.7 GB) from the official Qwen HF repo. Alternative: Qwen3-4B-Instruct Q4_K_M GGUF (Apache-2.0 verified on Qwen/Qwen3-4B-GGUF card 2026-10-12; 4B dense, 36 layers, 8 KV heads, ~2.5 GB, within the 5.5 GB Q4 cap; run in non-thinking mode via /no_think for deterministic output).
+- Alternatives: 14B Q4 (~8.4-9 GB, no fit per V17); gpt-oss-20b (16 GB min); Qwen3-30B MoE (server only).
+- Evidence: V16-V17; Qwen3-4B-GGUF card (apache-2.0, Q4_K_M 2.5 GB) [OFFICIAL].
+- Reason: Largest permissive coder fitting ~7 GB usable; Qwen3-4B is the only smaller permissive dense coder in the cap.
+- Confidence: Medium (measured in G2)
+- Fallback: Smaller model at 4096 ctx, then CPU-only; record perf impact.
+- Date: 2026-10-12
+
+## D8.2 Context length
+- Status: LOCKED (default 8192; G2 may revise to 4096)
+- Decision: Default 8192. Reference arithmetic [INFERENCE]: Qwen2.5-Coder-7B (28 layers, 4 KV heads, head dim 128): KV fp16 = 2*28*4*128*2 B/token = 57,344 B/token, ~0.47 GB at 8192. Weights ~4.7 GB Q4_K_M + buffers + display share of 8 GB. Measurement replaces arithmetic.
+- Alternatives: 4096 default (fallback if 8K peak >7.0 GB); 32K YaRN (rejected: KV alone ~1.9 GB, no headroom).
+- Evidence: Architecture figures V16; nvidia-smi measurement in G2.
+- Reason: 8K fits the demo evidence budget (~3000 tokens) with headroom; 4K fallback documented.
+- Confidence: Medium (calculated; measured in G2)
+- Fallback: 4096, re-run G2.
+- Date: 2026-10-12
+
+## D8.3 Concurrency
+- Status: LOCKED
+- Decision: Single-user laptop: one loaded model, one parallel request. Ollama names verified in current docs (docs.ollama.com/faq 2026-10-12): `OLLAMA_MAX_LOADED_MODELS=1`, `OLLAMA_NUM_PARALLEL=1` (RAM scales NUM_PARALLEL x CONTEXT_LENGTH). llama-server equivalent used live: `--n-parallel 1`.
+- Alternatives: Defaults (3 models / parallel>1) (rejected: VRAM contention on 8 GB).
+- Evidence: Ollama FAQ concurrency section [OFFICIAL].
+- Reason: Deterministic latency + no OOM from parallel KV.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-12
+
+## D8.4 Output mode
+- Status: LOCKED
+- Decision: Always JSON schema (`format` in Ollama; `response_format: {type: json_object}` + schema prompt on llama-server OpenAI endpoint), temperature 0, plus server-side validation + one repair (Phase 9). Never rely on schema adherence alone (V18: adherence not guaranteed).
+- Alternatives: Prompt-only JSON (rejected: unreliable on small models); grammar-constrained decoding (rejected: extra dependency for equal guarantee since server validates anyway).
+- Evidence: V18; llama-server OpenAI-compat docs (response_format support).
+- Reason: Adherence is probabilistic; validation is deterministic.
+- Confidence: High
+- Fallback: Deterministic abstention after two failures (Phase 9).
+- Date: 2026-10-12
+
 ## D4.1 Chunk budget
 - Status: LOCKED
 - Decision: Max ~512 approximate tokens per chunk, tokens = characters // 4 of chunk `text` (deterministic approximation, recorded here). cAST split-then-merge: top-level AST units; oversized units split recursively at named-child boundaries; small adjacent siblings merged greedily while within budget. Code files (py/ts/tsx/js/jsx) via isolated AST plan (fresh `run_isolated` child per file — same containment as D3.2 after the 0.26.0 saga); other indexed text files (json/yaml/toml/md/etc.) via degraded line windows of 80 lines with 20-line overlap. A single leaf that cannot split within budget is emitted whole and flagged `is_exception=1` (recorded, queryable).
@@ -452,3 +502,16 @@
 - Confidence: High
 - Fallback: `likely` label; unresolved imports recorded with `target: null`.
 - Date: 2026-10-11
+
+## G2 local-model gate — OUTCOME: Qwen3-4B-Instruct Q4_K_M @8192 (SUPERSEDES D8.1 default)
+- Status: LOCKED (outcome; revisit only with new evidence + SUPERSEDED entry)
+- Decision: G2 winner is Qwen3-4B-Instruct Q4_K_M (`Qwen/Qwen3-4B-GGUF`, Apache-2.0, ~2.5 GB) at ctx 8192 via llamacpp-vulkan. `mentor/config.py`: `LLM_MODEL = "qwen3-4b-instruct-q4_k_m"`, `LLM_CTX = 8192`, `LLM_SYSTEM_SUFFIX = "/no_think"`. Qwen2.5-Coder-7B-Instruct Q4_K_M stays a qualified fallback (`LLM_FALLBACK_MODEL`, no suffix).
+- Alternatives: Keep 7B default (rejected: G2 tiebreak is explicit — validity tied at ceiling, lower VRAM wins; Rule 5, gates are measured not argued); 14B/gpt-oss-20b/30B-MoE (rejected without download: no VRAM fit per V17).
+- Evidence (measured 2026-10-15, target RTX 5060 8GB, llama.cpp b11429 Vulkan, `-ngl 99 -c 8192 -np 1`; raw `docs/bench_7b.json`, `docs/bench_4b.json`):
+  - 7B: peak 4814 MiB (4.70 GB) ≤7.0 GB ✓; validity 22/22 = 1.000 [0.85, 1.00] ✓; sustained 288 it, 51.9 tok/s, ≤70.5 W ✓; Q mean 2.55 s / TTFT 0.10 s.
+  - 4B: peak 3658 MiB (3.57 GB) ✓; validity 22/22 = 1.000 [0.85, 1.00] ✓ (with `/no_think`); sustained 345 it, 82.9 tok/s, 62–71 W ✓; Q mean 0.94 s / TTFT 0.13 s.
+  - Both satisfy (a)+(b)+(c); validity tied → tiebreak lower VRAM → 4B (EVALUATION_RESULTS.md Phase 8).
+- Reason: Rule-bound choice with real wins (1.6× throughput, 1.1 GB less VRAM, equal validity). Known caveats recorded, not argued away: validity probe checks shape, not code-answer correctness (Phase 9 correctness comparison is the defined revisit trigger if it favors the code-specialized 7B); 4B needs `/no_think` or thinking tokens exhaust the budget (measured 5.1 s + empty vs 0.3 s + valid JSON).
+- Confidence: High (gates measured); Medium (code-answer quality unmeasured until Phase 9)
+- Fallback: 7B-coder at 8192 (all gates pass, 2.3 GB headroom), then 4096, then CPU-only per Phase 8 rollback.
+- Date: 2026-10-15

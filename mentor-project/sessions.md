@@ -89,3 +89,13 @@
 
 ### Next
 - Phase 8: local LLM gateway + laptop hardware benchmark G2 (Qwen2.5-Coder-7B Q4 via Ollama, VRAM/throughput/schema-validity).
+
+## 2026-10-15 — Phase 8 (gateway + G2) → GATE PASSED (G2 DECIDED: Qwen3-4B)
+- Pre-existing scaffolding (uncommitted): `mentor/llm/{gateway,ollama_adapter,llamacpp_adapter,egress}.py`, `scripts/{bench_llm,fetch_llm}.py`, `tests/{socket_guard,test_gateway,test_ollama_adapter,test_egress}.py`, D8.0–D8.4. Verified, kept, completed.
+- Added missing spec item: `test_live_smoke_opt_in` (skips unless MENTOR_LIVE=1) — passes against loopback llama-server.
+- Harness bugs found by measurement (own logic, fixed): (1) llamacpp path never sent the schema — `response_format: json_object` constrains to valid JSON only, model invented its own keys → first 7B run 0/22 validity; fixed per D8.4 with schema-in-prompt, re-ran 22/22. (2) max-tokens 256 truncated JSON mid-object → 1024.
+- G2 (llamacpp-vulkan, b11429, `-ngl 99 -c 8192 -np 1`): 7B peak 4814 MiB / 22-22 valid / 51.9 tok/s; 4B peak 3658 MiB / 22-22 valid (/no_think required — without it thinking exhausts budget → empty) / 82.9 tok/s. Both pass all three; validity tied → tiebreak lower VRAM → 4B wins (Rule 5). 7B stays qualified fallback; code-answer-quality revisit assigned to Phase 9 with evidence.
+- Raw: `docs/bench_7b.json`, `docs/bench_4b.json`. Suite 125/125 green. Commit `phase-08: local llm gateway and gate G2`.
+
+### Next
+- Phase 9: evidence assembly, answer contract, validator, abstention calibration (thresholds τ gated on gold).
