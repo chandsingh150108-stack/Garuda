@@ -148,3 +148,36 @@ class TourSummary(BaseModel):
     question: str
     steps: int
     stale: bool = False
+
+
+class TaskEvidence(BaseModel):
+    chunk_id: str
+    path: str
+    lines: str
+
+
+class TaskItem(BaseModel):
+    id: str
+    kind: str
+    title: str
+    description: str
+    file: str
+    start: int
+    end: int
+    symbol: str | None = None
+    evidence: list[TaskEvidence] = Field(default_factory=list)
+    detail: str = ""
+    lines: int = 1
+    files_touched: int = 1
+    fan_in: int = 0
+    difficulty: float = 0.0
+    risk: int = 0
+    high_risk: bool = False
+    prerequisites: list[str] = Field(default_factory=list)
+    tours: list[str] = Field(default_factory=list)
+
+
+class TasksResponse(BaseModel):
+    repo_id: str
+    sha: str
+    tasks: list[TaskItem] = Field(default_factory=list)

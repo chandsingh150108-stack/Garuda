@@ -57,3 +57,9 @@ LLM_SYSTEM_SUFFIX = "/no_think"
 # Qualified fallback (passes all G2 gates; code-specialized): 7B needs no suffix.
 LLM_FALLBACK_MODEL = "qwen2.5-coder-7b-instruct-q4_k_m"
 LLM_FALLBACK_SYSTEM_SUFFIX = ""
+# Phase 15 task scoring (D15.2/D15.3): engineering judgment, calibrated in
+# evals/tasks_calibration.md. difficulty = W1*log(lines) + W2*files + W3*fan_in.
+TASK_W1 = 1.0
+TASK_W2 = 2.0
+TASK_W3 = 0.5
+TASK_HIGH_RISK = 8  # risk >= this sinks below the top five (still listed)

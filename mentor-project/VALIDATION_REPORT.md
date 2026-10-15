@@ -62,3 +62,6 @@
 | 2026-10-16 | Phase 14 unit | `pytest tests/test_why.py tests/test_validator_v9.py -q` | PASS 12/12 | blame/log/H-blocks, why-path H attach, gh-offline zero sockets, V9 reject/accept/inference cases, provenance-from-pointers |
 | 2026-10-16 | Phase 14 why eval | `mentor eval answers --category why --why` | 1 answer / 3 abstains | FA 0/2; q22 false abstain is pre-gate retrieval floor |
 | 2026-10-16 | Phase 14 manual audit | full outputs of q21-24, provenance per segment | ZERO inferred-as-fact | q21 cites the exact gold commit (689d7105) with provenance history; q23/q24 UNKNOWN abstains (no fabrication); q22 abstain recorded, not wrong content |
+| 2026-10-16 | Phase 15 signals | TODO/TODO-exact-lines, coverage map, decorator-span response_model | MEASURED | 20 candidates (9/6/3/1+1); alembic+gen.ts excluded (recorded); decorator-span fixed login_access_token false-negative; stem-strict test matching |
+| 2026-10-16 | Phase 15 unit | `pytest tests/test_tasks.py -q` | PASS 5/5 | formula match, evidence+ranges, risk sink, tour links, endpoint |
+| 2026-10-16 | Phase 15 judgment | author review of top five | 5/5 REASONABLE | micro test-additions + compose TODO; calibration deviation (security scope/risk split) recorded as revision |

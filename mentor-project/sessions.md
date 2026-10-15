@@ -154,3 +154,11 @@
 
 ### Next
 - Phase 15: starter tasks (signal-ranked, evidence-linked, difficulty-scored).
+
+## 2026-10-16 — Phase 15 (starter tasks) → GATE PASSED
+- Signals measured: 2 TODO markers (exact lines, deduped); coverage map (route handlers covered by endpoint tests → dedicated-file check); decorator-span response_model (chunk-substring false-negative fixed); docstrings capped (stylistic).
+- Exclusions recorded: alembic/*, *.gen.ts. fan_in symbol-level (file-level measured absurd at 10.69).
+- Calibration rank recorded pre-weights; one deviation revised honestly (security scope/risk split across axes by design). Top-five judgment 5/5 reasonable. Suite 199/199. Commit `phase-15: starter tasks`.
+
+### Next
+- Phase 16: web UI (React+Vite+Monaco+Mermaid, CSP, Playwright e2e).

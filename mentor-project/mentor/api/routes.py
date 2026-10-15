@@ -253,3 +253,18 @@ def get_tour(repo_id: str, name: str):
     tour["repo_id"] = repo_id
     tour["stale"] = T.is_stale(Path(repo["index"]), repo["sha"], tour)
     return tour
+
+
+@router.get("/repos/{repo_id}/tasks", response_model=SC.TasksResponse)
+def list_tasks(repo_id: str, limit: int = Query(default=10, ge=1, le=50)):
+    from mentor.features import tasks as TS
+    repo = _repo(repo_id)
+    db = _index_db(repo)
+    tasks = TS.rank(TS.link_tours(
+        TS.collect(db, repo["sha"]), Path("evals/tours"),
+        Path("data/cache")), limit)
+    problems = TS.validate(db, repo["sha"], tasks, Path("evals/tours"))
+    if problems:
+        raise HTTPException(status_code=500,
+                            detail=f"task validation failed: {problems}")
+    return {"repo_id": repo_id, "sha": repo["sha"], "tasks": tasks}

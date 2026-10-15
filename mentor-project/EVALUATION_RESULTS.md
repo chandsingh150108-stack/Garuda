@@ -84,6 +84,19 @@ Manual review (VALIDATION_REPORT.md): signup flow correct end-to-end (route → 
 
 Manual audit (zero inferred-as-fact REQUIRED — met): q21 served one fact citing E1+H2 where H2 IS the gold commit 689d7105 ("constant time, to avoid enumeration attacks") — a genuine HISTORY-grounded causal answer (provenance defaulted to history). q22's open-registration rationale (commit 1f686689) exists in history but retrieval never surfaced the code (pre-gate abstain — retrieval floor, not a provenance failure). q23/q24 correctly UNKNOWN: commits record the change but no rationale, and the model abstained instead of fabricating.
 
+## Phase 15 tasks (mined 2026-10-16, 20 candidates → ranked 10)
+
+`mentor tasks --limit 10`: all validated (files exist, ranges in bounds, tour links resolve).
+
+Top-five author judgment (REQUIRED ≥4/5 reasonable — met 5/5):
+1. compose TODO marker (d=2.00) — reasonable: trivial, checkable, true starter.
+2. tests for `emails_enabled` (d=2.69) — reasonable: tiny pure property, learns test layout.
+3. tests for `custom_generate_unique_id` (d=2.69) — reasonable: pure helper, same shape.
+4. tests for `get_datetime_utc` (d=2.69) — reasonable (borderline busywork, but a genuine gap and a safe first file-touch).
+5. tests for `health_check` (d=2.69) — reasonable: route-test pattern every newcomer needs.
+
+Tour linkage measured: models.py tasks → crud+login tours; security tasks → login+signup; scaffolding files → no link (none rather than wrong). Calibration deviation recorded in evals/tasks_calibration.md (security scope-small/risk-flagged split across axes by design).
+
 ## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
 
 Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.

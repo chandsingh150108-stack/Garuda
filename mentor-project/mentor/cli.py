@@ -207,6 +207,25 @@ def cmd_tours(args) -> int:
     return 0
 
 
+def cmd_tasks(args) -> int:
+    from mentor.features import tasks as TS
+    tasks = TS.rank(TS.link_tours(
+        TS.collect(Path(args.index), args.sha), Path(args.tours),
+        Path(args.cache)), args.limit)
+    problems = TS.validate(Path(args.index), args.sha, tasks, Path(args.tours))
+    if problems:
+        print("TASK VALIDATION FAILED:")
+        for p in problems:
+            print(f"  {p}")
+        return 1
+    for t in tasks:
+        flag = " [HIGH RISK]" if t["high_risk"] else ""
+        print(f"d={t['difficulty']:.2f} r={t['risk']}{flag} [{t['kind']}] {t['title']}")
+        print(f"    {t['file']}:{t['start']}-{t['end']} tours={t['tours']} "
+              f"prereq={t['prerequisites']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -267,6 +286,12 @@ def main(argv: list[str] | None = None) -> int:
     trs.add_argument("--out", default="data/cache")
     trs.add_argument("--narrate", action="store_true",
                      help="ask the model for titles/explanations (needs server)")
+    tsk = sub.add_parser("tasks", help="Starter tasks for newcomers")
+    tsk.add_argument("--index", default="data/indexes/fst.sqlite")
+    tsk.add_argument("--sha", default=PINNED_SHA)
+    tsk.add_argument("--tours", default="evals/tours")
+    tsk.add_argument("--cache", default="data/cache")
+    tsk.add_argument("--limit", type=int, default=10)
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -288,6 +313,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_arch(args)
     if args.command == "tours":
         return cmd_tours(args)
+    if args.command == "tasks":
+        return cmd_tasks(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

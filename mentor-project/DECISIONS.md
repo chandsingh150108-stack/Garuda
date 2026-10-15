@@ -735,3 +735,43 @@
 - Confidence: High
 - Fallback: Local blame/log (always).
 - Date: 2026-10-16
+
+## D15.1 Signals
+- Status: LOCKED
+- Decision: Offline signals only: TODO/FIXME/HACK at exact lines; public backend functions with no test-name refs AND no dedicated test file (test_<stem>.py / stem.spec.* — helper-name collisions excluded); route handlers lacking response_model (decorator-span check, not chunk substring); undocumented public functions capped at 3 smallest (stylistic absence is not a task per file). Excluded: alembic/* (migration history), *.gen.ts (build artifacts). No `good first issue` labels (network off by default).
+- Alternatives: All-signals firehose (rejected: measured noise — alembic downgrades, name collisions); GitHub labels (rejected: network dependency).
+- Evidence: `mentor/features/tasks.py`; 20 candidates on fst (14 missing-tests, 6 no-response-model, 3 docstring, 2 todo→1 after dedupe).
+- Reason: Every signal must survive a "would a maintainer accept this PR" test; exclusions are recorded, not silent.
+- Confidence: Medium (heuristics, honest)
+- Fallback: TODO + missing-test signals only (rollback rule).
+- Date: 2026-10-16
+
+## D15.2 Difficulty
+- Status: LOCKED
+- Decision: difficulty = 1.0·log(lines) + 2.0·files_touched + 0.5·fan_in in config. fan_in is SYMBOL-level (callers + resolving name-importers); file-popularity scoring measured absurd (2-line helper at 10.69) and was rejected. Calibration rank recorded before weights (evals/tasks_calibration.md); one deviation recorded as revision (security-tests scope-small but risk-flagged — axes separated by design). Weights unchanged after measurement.
+- Alternatives: File fan-in (rejected by measurement); complexity metrics (rejected: literature shows practitioners prefer simple, interpretable metrics).
+- Evidence: `tests/test_tasks.py::test_scoring_matches_configured_formula`; RESEARCH_LOG.md Phase 15.
+- Reason: Repeatable within-repo ordering with interpretable parts; weights are judgment, stated as such.
+- Confidence: Medium (judgment, per literature)
+- Fallback: None (weight changes require a recorded entry).
+- Date: 2026-10-16
+
+## D15.3 Risk
+- Status: LOCKED
+- Decision: risk = fan_in + 5 per keyword hit (auth|password|migration|security|payment over file+symbol). Risk ≥ 8 sinks below the top five, still listed. No fst task hits 8 (max measured 7); the cutoff is live but untriggered — recorded, not tuned to trigger.
+- Alternatives: Keyword-only risk (rejected: ignores blast radius); exclusion instead of sinking (rejected: hiding information from newcomers).
+- Evidence: `tests/test_tasks.py::test_high_risk_excluded_from_top_five` (fixture).
+- Reason: Risk communication, not censorship.
+- Confidence: Medium
+- Fallback: None.
+- Date: 2026-10-16
+
+## D15.4 Prerequisites
+- Status: LOCKED
+- Decision: From the task file's imports: sqlmodel/sqlalchemy/alembic → ORM; fastapi/starlette → FastAPI routing; pwdlib/passlib/jose/security/auth → authentication flow; pytest/httpx → test client. Deterministic, no model involved.
+- Alternatives: LLM-inferred prerequisites (rejected: uncheckable).
+- Evidence: `tasks.prerequisites`; e.g. deps.py tasks list all three correctly.
+- Reason: Import lists ARE the prerequisite lists.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
