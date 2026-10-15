@@ -815,3 +815,43 @@
 - Confidence: High
 - Fallback: None.
 - Date: 2026-10-16
+
+## D17.1 Change detection
+- Status: LOCKED
+- Decision: Committed changes via `git diff --name-status -M <indexed> HEAD` (renames detected); uncommitted changes via content-hash compare of dirty working-tree files against the manifest/index (untracked indexable files count as added). The snapshot records `index_head`, `index_dirty`, `dirty_files` in the index `meta` table; `/status` reports head + dirty + changed lists. No timestamps anywhere.
+- Alternatives: Timestamps/mtime (rejected: clock-skew lies, content hashes don't); committed-SHA-only (rejected: the demo edit story is a dirty tree).
+- Evidence: `mentor/index/freshness.py::compute_changed/index_status`; `tests/test_freshness.py::test_dirty_tree_records_flag_and_hashes`.
+- Reason: Demo edits are uncommitted; citations must go stale without a commit.
+- Confidence: High
+- Fallback: Full `mentor index` rebuild (rollback rule).
+- Date: 2026-10-16
+
+## D17.2 Invalidation
+- Status: LOCKED
+- Decision: An artifact is stale iff any file in its recorded dependency set changed. Tours carry `dep_hashes` (`features/tours.py::dep_hashes/is_stale`); `freshness.tours_affected` intersects recorded dep keys with the changed set; `mentor reindex` prints stale tour names for lazy regen (`mentor tours precompute`). No timestamp-based invalidation.
+- Alternatives: Eager regen on reindex (rejected: needs model server at reindex time; lazy keeps reindex <60 s and offline).
+- Evidence: `tests/test_freshness.py` positive (dep edit → stale + listed) and negative (unrelated edit → valid) cases.
+- Reason: Unrelated edits must never invalidate; dependents regen only on request with validator-first narration.
+- Confidence: High
+- Fallback: Narrow/regen the tour; never invent steps (D13.3).
+- Date: 2026-10-16
+
+## D17.3 Citation staleness
+- Status: LOCKED
+- Decision: Every evidence ref carries `content_hash` (`_attach_hashes`); the code endpoint recomputes the current-lines hash; mismatch shows the stale badge (`CitationChip` + Code `sha-banner`). Missing chunk rows read as stale (fail-visible, never fail-valid). `freshness.content_stale` is the single predicate; the `/status` dirty signal backs the status bar.
+- Alternatives: Showing stale as valid (rejected: failure condition); hiding stale cites (rejected: newcomer needs to see what moved).
+- Evidence: `tests/test_stale_citation.py` (3/3) + vitest chip stale case + playwright stale-badge test.
+- Reason: A moved line must never present as verified.
+- Confidence: High
+- Fallback: Full rebuild; never disable the check (rollback rule).
+- Date: 2026-10-16
+
+## D17.4 Trigger
+- Status: LOCKED
+- Decision: `mentor reindex` (explicit, local) + `scripts/install_hook.py` writing an opt-in post-commit hook (never auto-installed). No webhook server in v1 (needs inbound connectivity the laptop demo doesn't have).
+- Alternatives: Webhook server (rejected: needs server + inbound); polling daemon (rejected: moving part with no demo value).
+- Evidence: `scripts/install_hook.py --install` dry-run-first; reindex timing gate (<60 s) in `tests/test_freshness.py`.
+- Reason: Explicit beats magic for a single-user localhost product.
+- Confidence: High
+- Fallback: Full rebuild.
+- Date: 2026-10-16

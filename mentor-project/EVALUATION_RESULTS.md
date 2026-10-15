@@ -111,3 +111,13 @@ Commands: `python scripts/bench_llm.py --provider llamacpp --endpoint http://127
 Rule applied (spec G2): both satisfy (a)+(b)+(c); validity tied at ceiling 1.000 → tiebreak lower peak VRAM → Qwen3-4B. `mentor/config.py`: `LLM_MODEL = "qwen3-4b-instruct-q4_k_m"`, `LLM_CTX = 8192`, `LLM_SYSTEM_SUFFIX = "/no_think"`.
 
 Caveats (open for Phase 9 answer-quality eval): (1) validity probe checks shape only, not code-answer correctness — the code-specialized 7B may answer better; revisit with evidence if Phase 9 correctness comparison favors it. (2) 4B requires `/no_think`: without it, thinking tokens exhaust the budget and content arrives empty (measured 5.1 s + empty vs 0.3 s + valid JSON). (3) nvidia-smi read 0 MiB once with the 4B server idle-running (driver/Vulkan attribution quirk); in-bench readings under load (3642–3658) are the trusted numbers.
+
+## Phase 17 reindex timing (2026-10-16, target laptop, SHA 7257e60)
+
+Scripted scratch-file edit (`demo_live_edit_scratch.py`, untracked) + `FR.reindex` on tmp copies of the primary index/manifest/parses (pinned artifacts untouched, scratch reverted after):
+
+| Changed | Reparsed | Index rows touched | Elapsed | Gate (<60 s) |
+|---|---|---|---|---|
+| added 1 file | 1 file | 1 file / 1 chunk / symbols | 0.68 s | PASS |
+
+Command pattern: `python -m mentor.cli reindex --repo data/repos/fst --index <IDX> --manifest <M> --parses <P>`. Full-suite re-verification in `tests/test_freshness.py::test_reindex_primary_repo_under_60s` (same setup, asserts elapsed < 60).

@@ -18,10 +18,12 @@ Git repo@SHA (untrusted) ─▶ INGEST (acquire→filters→secrets→manifest)
      (+stale badge via content_hash, wired fully Phase 17); Code is Monaco read-only with SHA banner and
      `?plain=1` fallback; Mermaid parse-before-render with list fallback; `create_app()` serves `web/dist`
      + SPA fallback only when built (never committed; `npm run build` reproduces).
-FEATURES: arch (deterministic Mermaid) [A13] · tours (BFS d≤3 fan≤8, resolved|calls vs likely) · why (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN) · tasks (signals+scoring) · freshness (diff+hashes, lazy regen, stale badge) [A14]
+FEATURES: arch (deterministic Mermaid) [A13] · tours (BFS d≤3 fan≤8, resolved|calls vs likely) · why (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN) · tasks (signals+scoring) · freshness (diff+dirty hashes, per-file row refresh, lazy tour regen, stale badge) [A14/D17]
 ```
 
 Data flow per question: ask → analyze → lexical/symbol/path + RRF → confidence gate (tau) → evidence → gateway (JSON schema) → validator → server-expand cites → provider label + SHA + audit (hashes).
+
+Freshness flow (Phase 17): working tree → `compute_changed` (git diff -M + dirty hashes) → `reindex` (delete + re-chunk + re-parse only touched paths, edges rebuilt, manifest/parses rewritten, `meta` dirty flags) → `/status` (head/dirty/changed) → UI stale badge on hash mismatch; tours regen lazily via `mentor tours precompute`.
 
 ## Gates
 - G1 embedding Phase 7 · G2 model Phase 8 · G3 agent Phase 22 · G4 reranker Phase 22. Procedures in DECISIONS.md.

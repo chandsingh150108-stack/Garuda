@@ -75,6 +75,10 @@ class StatusResponse(BaseModel):
     files: int = 0
     chunks: int = 0
     symbols: int = 0
+    head_sha: str = ""  # Phase 17: git HEAD ("" when unavailable)
+    dirty: bool = False  # Phase 17: working tree differs from indexed state
+    dirty_files: list[str] = Field(default_factory=list)
+    changed: list[str] = Field(default_factory=list)  # added+modified+deleted
 
 
 class IndexResponse(BaseModel):

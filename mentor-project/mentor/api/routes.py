@@ -206,16 +206,25 @@ def read_code(repo_id: str,
 
 @router.get("/repos/{repo_id}/status", response_model=SC.StatusResponse)
 def repo_status(repo_id: str):
+    from mentor.index import freshness as FR
     repo = _repo(repo_id)
     counts = {"files": 0, "chunks": 0, "symbols": 0}
     db = Path(repo["index"])
     if db.is_file():
         counts = ST.table_counts(db)
+    try:
+        fresh = FR.index_status(Path(repo["path"]), db, repo["sha"])
+    except Exception:
+        fresh = {"head": "", "dirty": False, "dirty_files": [], "changed": []}
     return {"repo_id": repo_id, "sha": repo["sha"],
             "schema_version": CFG.INDEX_SCHEMA_VERSION,
             "files": counts.get("files", 0),
             "chunks": counts.get("chunks", 0),
-            "symbols": counts.get("symbols", 0)}
+            "symbols": counts.get("symbols", 0),
+            "head_sha": fresh.get("head", ""),
+            "dirty": bool(fresh.get("dirty", False)),
+            "dirty_files": fresh.get("dirty_files", []),
+            "changed": fresh.get("changed", [])}
 
 
 @router.get("/repos/{repo_id}/architecture",

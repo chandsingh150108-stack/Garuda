@@ -23,8 +23,21 @@ test("citation opens the exact cited lines", async ({ page }) => {
   expect(banner).toMatch(/\.py:\d+-\d+ @ [0-9a-f]{8,}/);
 });
 
-test("layout has no body horizontal scroll at 1280 and 400px", async ({
+test("stale badge shows on content-hash mismatch (Phase 17)", async ({
   page,
+}) => {
+  // A bogus ?hash= can never match the current lines: the badge must show
+  // without any model call (code endpoint only reads files).
+  await page.goto(
+    "/code?repo=fst&path=backend/app/main.py&start=1&end=5&hash=deadbeef"
+  );
+  await expect(page.getByTestId("sha-banner")).toContainText(
+    /stale-citation/,
+    { timeout: 30000 }
+  );
+});
+
+test("layout has no body horizontal scroll at 1280 and 400px", async ({  page,
 }) => {
   for (const width of [1280, 400]) {
     await page.setViewportSize({ width, height: 800 });

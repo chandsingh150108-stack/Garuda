@@ -226,6 +226,43 @@ def cmd_tasks(args) -> int:
     return 0
 
 
+def cmd_reindex(args) -> int:
+    """Refresh only changed rows (spec Phase 17, D17.4).
+
+    Rollback for any freshness failure is a full `mentor index` rebuild
+    from scratch (recorded, never silent).
+    """
+    import json
+    from mentor.index import freshness as FR
+    stats = FR.reindex(Path(args.repo), Path(args.index),
+                       Path(args.manifest), Path(args.parses),
+                       args.sha, timeout_s=args.timeout)
+    print(f"added={len(stats['added'])} modified={len(stats['modified'])} "
+          f"deleted={len(stats['deleted'])} renamed={len(stats['renamed'])} "
+          f"dirty={stats['dirty']} elapsed={stats['elapsed_s']}s")
+    for rel in stats["added"]:
+        print(f"  A {rel}")
+    for rel in stats["modified"]:
+        print(f"  M {rel}")
+    for rel in stats["deleted"]:
+        print(f"  D {rel}")
+    for src, dst in stats["renamed"]:
+        print(f"  R {src} -> {dst}")
+    if stats["failed"]:
+        print("FAILED:")
+        for f in stats["failed"]:
+            print(f"  {f}")
+    affected = FR.tours_affected(Path(args.cache), stats["added"] + stats["modified"]
+                                 + stats["deleted"])
+    if affected:
+        print(f"stale tours (regen lazily with `mentor tours precompute`): "
+              f"{', '.join(affected)}")
+    manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+    print(f"manifest entries={manifest['count']} "
+          f"index files={stats['files']} chunks={stats['chunks']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -292,6 +329,14 @@ def main(argv: list[str] | None = None) -> int:
     tsk.add_argument("--tours", default="evals/tours")
     tsk.add_argument("--cache", default="data/cache")
     tsk.add_argument("--limit", type=int, default=10)
+    rdx = sub.add_parser("reindex", help="Refresh only changed index rows")
+    rdx.add_argument("--repo", default="data/repos/fst")
+    rdx.add_argument("--index", default="data/indexes/fst.sqlite")
+    rdx.add_argument("--manifest", default=None)
+    rdx.add_argument("--parses", default=None)
+    rdx.add_argument("--sha", default=PINNED_SHA)
+    rdx.add_argument("--cache", default="data/cache")
+    rdx.add_argument("--timeout", type=float, default=10.0)
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -299,6 +344,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.parses is None:
             args.parses = f"data/parses/{args.sha}.json"
         return cmd_index(args)
+    if args.command == "reindex":
+        if args.manifest is None:
+            args.manifest = f"data/manifests/{args.sha}.json"
+        if args.parses is None:
+            args.parses = f"data/parses/{args.sha}.json"
+        return cmd_reindex(args)
     if args.command == "search":
         return cmd_search(args)
     if args.command == "eval" and args.what == "retrieval":

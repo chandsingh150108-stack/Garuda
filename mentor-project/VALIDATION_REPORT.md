@@ -75,3 +75,9 @@
 | 2026-10-16 | Phase 16 e2e | `npx playwright test` (llama-server 4B + `mentor serve` fst) | PASS 2/2 | citation→exact lines @ cited SHA (729ms cached after first live answer); layout 1280+400px no body h-scroll |
 | 2026-10-16 | Phase 16 suite | `pytest tests/ -q` | PASS 202 + 1 skip | 199 prior + 3 web_build green; skip = `test_live_smoke_opt_in` (needs MENTOR_LIVE=1) |
 | 2026-10-16 | Phase 16 hygiene | `web/dist/` + `web/test-results/` gitignored; stray `docs/serve16.*` logs removed | DONE | Build output reproducible via `npm run build`; never committed |
+| 2026-10-16 | Phase 17 research | `git diff --name-status -M` + porcelain dirty overlay + dep-set rule | CONFIRMED | Rename rows `Rxxx old new`; untracked indexable files count as added; tours already carry `dep_hashes` with intersection semantics |
+| 2026-10-16 | Phase 17 decisions | D17.1–D17.4 recorded | DONE | Diff+dirty detection / dep-set invalidation + lazy regen / content-hash stale badge / `reindex` + opt-in hook |
+| 2026-10-16 | Phase 17 unit | `pytest tests/test_freshness.py tests/test_stale_citation.py -q` | PASS 9/9 | scenario (chunk moved, old cite stale) / negative (unrelated edit, artifact valid) / positive (dep edit, tour stale + listed) / rename (no orphans) / dirty flag + meta / API stale + status dirty / missing-row fail-visible |
+| 2026-10-16 | Phase 17 timing | scripted scratch-file edit + reindex on tmp copies of the primary index | 0.68 s (< 60 s gate) | Added 1 file / 1 chunk; pinned `fst.sqlite` untouched; scratch reverted; recorded EVALUATION_RESULTS.md |
+| 2026-10-16 | Phase 17 e2e | `npx playwright test` (serve only, no model) | PASS 3/3 | citation→SHA (cached) + NEW stale-badge on `&hash=deadbeef` mismatch + layout 1280/400 |
+| 2026-10-16 | Phase 17 compat | `pytest tests/test_api.py -q` | PASS 5/5 | Extended `/status` (head_sha/dirty/dirty_files/changed) backward-compatible; live status shows head==indexed, dirty=false |
