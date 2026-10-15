@@ -99,11 +99,17 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
         return {**out, "repairs": repairs, "prompt_version": P.PROMPT_VERSION,
                 "model": CFG.LLM_MODEL, "evidence_tokens": env["used_tokens"]}
     answer = C.Answer.model_validate(parsed)
+    closest = []
+    if answer.status == "abstain":
+        closest = [{"id": b["id"], "path": b["path"],
+                    "lines": f"{b['start_line']}-{b['end_line']}",
+                    "header": b["header"]} for b in blocks[:3]]
     return {"status": answer.status,
             "segments": [s.model_dump() for s in answer.segments],
             "missing": list(answer.missing),
             "repairs": repairs, "prompt_version": P.PROMPT_VERSION,
             "model": CFG.LLM_MODEL, "evidence_tokens": env["used_tokens"],
+            "closest": closest,
             "evidence": [{"id": b["id"], "path": b["path"],
                           "lines": f"{b['start_line']}-{b['end_line']}"}
                          for b in blocks]}

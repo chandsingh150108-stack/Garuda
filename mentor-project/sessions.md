@@ -110,3 +110,12 @@
 
 ### Next
 - Phase 10: question-answering service and audit log (FastAPI loopback, provider label, hash-only audit).
+
+## 2026-10-16 — Phase 10 (QA service + audit) → GATE PASSED
+- Implemented `mentor/api/{schemas,routes,app}.py` (repos/index/ask/code/status, typed), `mentor/answer/{cache,audit}.py`, `mentor serve` CLI (loopback-only, --unsafe-bind refusal).
+- schema.sql v1→v2 (additive audit+cache); `ensure_service_tables()` upgrades existing indexes without content rebuild (D10.4).
+- Test fixes from measurement: abstain responses now carry closest refs (qa.py; audit evidence matched); range-cap test uses a >400-line file.
+- Live smoke via loopback :8000: 5/5 clean (2 answers, 2 pre-gate abstains with closest, 1 known billing residual). Suite 149/149 green. Commit `phase-10: qa service and audit`.
+
+### Next
+- Phase 11: optional free-cloud adapters with egress gating (Groq/Gemini behind allow_free_cloud + allowlist + redaction + budget, default OFF).

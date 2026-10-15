@@ -5,7 +5,12 @@ Cloud is default-off; see A10.
 """
 
 ALLOW_FREE_CLOUD = False
-INDEX_SCHEMA_VERSION = 1
+INDEX_SCHEMA_VERSION = 2
+
+# Phase 10 service defaults (D10.1-D10.3, LOCKED).
+WEB_ORIGIN = "http://127.0.0.1:5173"  # single local web origin for CORS
+MAX_BODY_BYTES = 1_000_000  # request size limit (413 beyond)
+AUDIT_STORE_TEXT = False  # audit keeps hashes only unless explicitly enabled
 DEFAULT_REPO_ID = "fst"
 
 # Ingest limits (spec Phase 2, LOCKED via D2 decisions)

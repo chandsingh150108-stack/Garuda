@@ -14,7 +14,7 @@ from pathlib import Path
 
 from mentor.index import chunker as K
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 
 
@@ -40,10 +40,28 @@ def init_db(out: Path) -> sqlite3.Connection:
     out.parent.mkdir(parents=True, exist_ok=True)
     con = _connect(out)
     con.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
-    con.execute("PRAGMA user_version=1")
-    con.execute("INSERT INTO meta(key, value) VALUES ('schema_version', '1')")
+    con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+    con.execute("INSERT INTO meta(key, value) VALUES ('schema_version', ?)",
+                (str(SCHEMA_VERSION),))
     con.commit()
     return con
+
+
+def ensure_service_tables(con) -> None:
+    """Additively create Phase 10 service tables if missing.
+
+    Content tables are untouched, so indexes built at version 1 gain audit +
+    cache without a rebuild (recorded D10 decision). Fresh builds already have
+    them via schema.sql (version 2).
+    """
+    ddl = SCHEMA_PATH.read_text(encoding="utf-8")
+    for name in ("audit", "cache"):
+        start = ddl.index(f"CREATE TABLE {name} (")
+        end = ddl.index(");", start) + len(");")
+        stmt = ddl[start:end].replace(f"CREATE TABLE {name} (",
+                                      f"CREATE TABLE IF NOT EXISTS {name} (", 1)
+        con.execute(stmt)
+    con.commit()
 
 
 def _jdump(value) -> str:

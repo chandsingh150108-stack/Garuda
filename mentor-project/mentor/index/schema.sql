@@ -136,3 +136,32 @@ CREATE TABLE audit_log (
   event TEXT NOT NULL,
   detail_json TEXT NOT NULL
 );
+
+-- Phase 10 service tables (additive; content schema unchanged).
+-- One row per served ask. Hashes by default (D10.2); q_text/a_text stay NULL
+-- unless audit_store_text=true. evidence_json = [{id, path, lines}].
+CREATE TABLE audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,
+  repo_id TEXT NOT NULL,
+  sha TEXT NOT NULL,
+  q_hash TEXT NOT NULL,
+  evidence_json TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  status TEXT NOT NULL,
+  verdict TEXT NOT NULL,
+  prompt_version TEXT NOT NULL,
+  cached INTEGER NOT NULL DEFAULT 0,
+  q_text TEXT,
+  a_text TEXT
+);
+
+-- Phase 10 answer cache (D10.3): validated answers only, never abstentions.
+CREATE TABLE cache (
+  key TEXT PRIMARY KEY,
+  repo_id TEXT NOT NULL,
+  sha TEXT NOT NULL,
+  created_ts TEXT NOT NULL,
+  response_json TEXT NOT NULL
+);

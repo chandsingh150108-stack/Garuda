@@ -1,0 +1,1 @@
+"""Mentor HTTP API package (spec Phase 10). Loopback-only service boundary."""

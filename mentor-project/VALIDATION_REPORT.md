@@ -47,3 +47,5 @@
 | 2026-10-16 | Phase 9 prompt fix | schema-echo diagnosis → compact contract | FIXED, verified live | full Pydantic schema in prompt → 4B echoes it (V6 fail); compact shape + example → validated answer, repairs=0 |
 | 2026-10-16 | Phase 9 calib | `python scripts/calibrate_tau.py` (30 live asks, 4B) | RECORDED `docs/calibration_p9.json` | grid on dev (seed 7, n=15): TAU_SCORE=0.02, TAU_COV=0.0; dev 12/15, FA 0/6, FAb 3/9 |
 | 2026-10-16 | Phase 9 held-out | `mentor eval answers --split dev\|test` (locked τ) | MATCHES simulation | dev FA 0/6 [0.00,0.39], FAb 3/9 [0.12,0.65]; test FA 1/2 [0.09,0.91] (q25 billing confabulation — honest-limit case), FAb 4/13 [0.13,0.58] |
+| 2026-10-16 | Phase 10 unit | `pytest tests/test_api.py tests/test_audit.py tests/test_cache.py -q` | PASS 10/10 | bind refusal, confinement 400/404, 400-line truncation, 413 oversize, 1 hash-only audit row, cache hit/miss, abstention never cached |
+| 2026-10-16 | Phase 10 smoke | `mentor serve` + 5 live asks (q01,q03,q12,q20,q25) | 5/5 no unhandled errors | 2 validated answers, 2 pre-gate abstains with closest refs, 1 known billing residual; abstain responses now carry closest refs (qa.py fix) |

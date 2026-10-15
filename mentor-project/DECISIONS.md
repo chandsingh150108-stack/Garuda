@@ -555,3 +555,53 @@
 - Confidence: Medium (n=15/split; intervals wide and reported)
 - Fallback: τ_score=0.0 (gate off) restores full-recall behavior; any τ change after held-out use requires a recorded entry.
 - Date: 2026-10-16
+
+## D10.1 Binding
+- Status: LOCKED
+- Decision: Serve binds loopback only (127.0.0.1/::1/localhost). `resolve_bind()` refuses any other host unless `--unsafe-bind` is passed (documented unsupported). CORS allows exactly one local origin (`WEB_ORIGIN`, credentials off, GET+POST only). Bodies capped at 1 MB (413 beyond).
+- Alternatives: 0.0.0.0 for LAN demo (rejected: single-user localhost product; C7); wildcard CORS (rejected).
+- Evidence: `mentor/api/app.py`; `tests/test_api.py::test_bind_refuses_non_loopback_without_flag`; FastAPI CORSMiddleware docs (explicit allow_origins list) + local TestClient verification [OFFICIAL + measurement].
+- Reason: The laptop is not a server (hardware ledger); loopback is the isolation boundary for the single-user tier.
+- Confidence: High
+- Fallback: `--unsafe-bind` exists but is unsupported and untested beyond the refusal test.
+- Date: 2026-10-16
+
+## D10.2 Audit contents
+- Status: LOCKED
+- Decision: One row per served ask in the index `audit` table: ts, repo_id, sha, q_hash (SHA-256 of normalized question), evidence [{id,path,lines}] (closest refs for abstentions), provider, model, status, verdict (valid|repaired|abstained-pre|abstained-post|gateway-error|cached), prompt_version, cached flag. q_text/a_text stay NULL unless `AUDIT_STORE_TEXT=true` (default false).
+- Alternatives: Full-text logs (rejected: leak damage; T1); no audit (rejected: egress accountability).
+- Evidence: `mentor/answer/audit.py`; `tests/test_audit.py` (exactly one row, hash matches, text columns NULL).
+- Reason: Hashes answer "what left the laptop on what evidence" without storing content.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D10.3 Caching
+- Status: LOCKED
+- Decision: Cache key = sha256(repo_id, sha, INDEX_SCHEMA_VERSION, normalized-question hash, provider, model, prompt version, k). Only status=answer outputs with ≥1 cited fact are stored; abstentions never (re-evaluated after index changes). SHA+repo+schema-version in the key makes cross-repo/cross-commit hits impossible by construction.
+- Alternatives: Cache abstentions (rejected: staleness after reindex); TTL expiry (rejected: content-keyed already; freshness handled Phase 17).
+- Evidence: `mentor/answer/cache.py`; `tests/test_cache.py` (hit on repeat, miss on SHA change, abstention re-calls model).
+- Reason: Deterministic answers are pure functions of (repo, commit, question, model, prompt) — safe to memoize.
+- Confidence: High
+- Fallback: Delete cache rows (recomputed on demand).
+- Date: 2026-10-16
+
+## D10.4 Service tables without content rebuild
+- Status: LOCKED
+- Decision: schema.sql gains additive `audit` + `cache` tables; version 1→2 (`store.SCHEMA_VERSION`, `PRAGMA user_version`, meta row). Content tables byte-identical, so existing indexes gain the tables via `ensure_service_tables()` (CREATE TABLE IF NOT EXISTS from canonical DDL) instead of a full rebuild.
+- Alternatives: Full re-index (rejected: content unchanged, wasteful); silent migration (rejected: version rule).
+- Evidence: `mentor/index/store.py::ensure_service_tables`; existing fst.sqlite (v1) serves audit/cache after ensure.
+- Reason: Version rule honored (bump + record), rebuild cost avoided with proof of equivalence (DDL sourced from schema.sql itself).
+- Confidence: High
+- Fallback: Full rebuild produces identical content tables plus the new ones.
+- Date: 2026-10-16
+
+## D10.5 Service dependencies
+- Status: LOCKED
+- Decision: `fastapi==0.141.1` (MIT), `uvicorn==0.53.0` (BSD-3), `httpx==0.28.1` (BSD-3, TestClient transport) pinned in requirements.txt. All free/open, permissive licences.
+- Alternatives: stdlib http.server (rejected: no typing/validation story; FastAPI+Pydantic reuse the contract models).
+- Evidence: Installed + smoke-served 2026-10-16 [OFFICIAL: package licences].
+- Reason: Spec stack (A16) names FastAPI+Pydantic; uvicorn/httpx are its standard serve/test companions.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16

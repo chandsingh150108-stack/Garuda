@@ -52,6 +52,20 @@ Commands: `python scripts/calibrate_tau.py --out docs/calibration_p9.json`; `pyt
 
 Reading: pre-gate abstains cluster at top_score 0.01639 (=1/61, single-retriever rank-1 only). Residual false answer (q25 "billing", no billing code exists): model served a hedged confabulation citing 10 unrelated blocks — passes V1–V8 (valid shape, no checkable identifiers) but semantically unfaithful. This is the documented honest limit in action, not a validator bug; tightening τ further trades measured false abstains (dev grid already optimal).
 
+## Phase 10 service smoke (live API, 2026-10-16, 4B via llamacpp-vulkan + uvicorn loopback :8000)
+
+`mentor serve --index data/indexes/fst.sqlite --port 8000`; 5/5 questions completed, no unhandled errors, all responses contract-valid:
+
+| Question | Expected | Got | Evidence |
+|---|---|---|---|
+| q01 registration (`register_user`) | answer | answer, 1 seg, repairs=0 | 6 blocks (users.py:103-161 top) |
+| q03 password hashing | answer | abstain (pre-gate, score 0.01639) | closest 3 refs |
+| q12 frontend pages/signup page | answer | answer, 1 seg, repairs=0 | 7 blocks |
+| q20 delete own account | answer | abstain (pre-gate, score 0.01639) | closest 3 refs |
+| q25 billing | abstain | answer (known Phase 9 residual) | 10 blocks |
+
+Cache + audit rows landed in the gitignored index DB (runtime data, not committed). Bind refusal, path confinement, range cap, and 413 covered in `tests/test_api.py`.
+
 ## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
 
 Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.

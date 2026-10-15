@@ -128,6 +128,19 @@ def cmd_eval_answers(args) -> int:
     return 0
 
 
+def cmd_serve(args) -> int:
+    import uvicorn
+    from mentor.api import app as APP
+    from mentor.api import routes as R
+    APP.resolve_bind(args.host, args.unsafe_bind)
+    R.REGISTRY["fst"] = {"id": "fst", "path": str(Path(args.repo).resolve()),
+                         "sha": args.sha, "index": args.index}
+    print(f"serving fst@{args.sha[:12]} on http://{args.host}:{args.port} "
+          f"(index {args.index})")
+    uvicorn.run(APP.create_app(), host=args.host, port=args.port, log_level="info")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -161,6 +174,13 @@ def main(argv: list[str] | None = None) -> int:
     ask.add_argument("--index", default="data/indexes/fst.sqlite")
     ask.add_argument("--sha", default=PINNED_SHA)
     ask.add_argument("--timeout", type=float, default=120.0)
+    srv = sub.add_parser("serve", help="Serve the loopback QA API")
+    srv.add_argument("--index", default="data/indexes/fst.sqlite")
+    srv.add_argument("--repo", default="data/repos/fst")
+    srv.add_argument("--sha", default=PINNED_SHA)
+    srv.add_argument("--host", default="127.0.0.1")
+    srv.add_argument("--port", type=int, default=8000)
+    srv.add_argument("--unsafe-bind", action="store_true")
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -176,6 +196,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_eval_answers(args)
     if args.command == "ask":
         return cmd_ask(args)
+    if args.command == "serve":
+        return cmd_serve(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

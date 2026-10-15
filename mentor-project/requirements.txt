@@ -9,5 +9,9 @@ tree-sitter-typescript==0.23.2
 PyYAML==6.0.3
 # Phase 9 answer contract (D9.2): MIT, free. Used for schema models only.
 pydantic==2.13.5
+# Phase 10 service (D10): all free. FastAPI MIT, uvicorn BSD-3, httpx BSD-3.
+fastapi==0.141.1
+uvicorn==0.53.0
+httpx==0.28.1
 # Test-only:
 pytest==9.1.1
