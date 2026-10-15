@@ -10,7 +10,7 @@ Git repo@SHA (untrusted) ─▶ INGEST (acquire→filters→secrets→manifest)
   ─▶ INDEX (one SQLite/FTS5 per repo: files/symbols/imports/edges/routes/models/config/chunks/artifacts/audit) [A3/A4]
   ─▶ RETRIEVE (FTS5 BM25 identifier-split + symbol + path → RRF-60 → confidence signals; dense only if G1) [A5/A6]
   ─▶ EVIDENCE (E1..En server-numbered, line-numbered, ≤3000 tok) [A11]
-  ─▶ GATEWAY (loopback-only; Qwen3-4B Q4_K_M @8192 via llamacpp-vulkan per G2, Ollama documented default [A8/A17]; Groq/Gemini only if allow_free_cloud + allowlisted_public + clean scan + redaction + budget [A10])
+  ─▶ GATEWAY (loopback-only local [A8/A17]; cloud branch Groq→Gemini→local behind D11.1 six-gate + redaction + 90% budget, default OFF [A10/D11])
   ─▶ ANSWER LAYER p9v1 (evidence → contract → validator V1-V8 → 1 repair → answer|abstain; pre-gate τ_score=0.02) [A11/A12/D9.4]
   ─▶ API (FastAPI 127.0.0.1 only) + WEB (React/Vite/Monaco-readonly/Mermaid/plain-text/CSP) [A15/A16]
 FEATURES: arch (deterministic Mermaid) [A13] · tours (BFS d≤3 fan≤8, resolved|calls vs likely) · why (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN) · tasks (signals+scoring) · freshness (diff+hashes, lazy regen, stale badge) [A14]

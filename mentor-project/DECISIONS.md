@@ -605,3 +605,33 @@
 - Confidence: High
 - Fallback: None.
 - Date: 2026-10-16
+
+## D11.1 Cloud gate order
+- Status: LOCKED
+- Decision: A cloud call happens only if ALL hold, in this order: `ALLOW_FREE_CLOUD=true` → repo `allowlisted_public=true` (per-repo registration field, default false) → manifest shows no `secret`-skipped files → redaction ran on every block (secret-indicator lines removed, flagged blocks dropped, counts-only report) → redacted payload ≤ `CLOUD_MAX_TOKENS` (6000) → daily budget under 90% of recorded limits. Gemini additionally requires public (its own pre-check). First failure returns `CLOUD_BLOCKED:<reason>` and the chain falls back; nothing is sent.
+- Alternatives: Single master switch only (rejected: one flag cannot express repo/scan/budget states); allowlist-only (rejected: secret/budget risks remain).
+- Evidence: `gateway.check_cloud_allowed` + `qa._serve_with_cloud`; `tests/test_cloud_gating.py` (order, private block, dirty-scan block, host pinning).
+- Reason: Six independent failure modes need six named, testable conditions with a deterministic order.
+- Confidence: High
+- Fallback: `ALLOW_FREE_CLOUD=false` restores pure-local with no other change (rollback procedure).
+- Date: 2026-10-16
+
+## D11.2 Primary and fallback
+- Status: LOCKED
+- Decision: Groq primary → Gemini fallback → local last. Chain tries each configured provider once (no 429 retries — re-hitting a rate limit is wrong); any transport/rate-limit/timeout/schema failure moves to the next; final local failure abstains per Phase 9. Contract identical at every step; responses carry provider/fallback/cloud_status labels (Phase 16 UI). Repair always runs locally (no quota spent). Model names from live `list_models`, never hardcoded; empty model/key = provider skipped as "unconfigured".
+- Alternatives: Single provider (rejected: free quotas are volatile); 429 retry-with-backoff (rejected: burns quota, delays fallback).
+- Evidence: `qa._serve_with_cloud`, `gateway.generate_auto`; `tests/test_fallback.py` (429→local same contract, schema propagates, no-keys local).
+- Reason: Free tiers fail often and without notice; the chain treats every cloud call as expendable.
+- Confidence: High
+- Fallback: Local-only (default).
+- Date: 2026-10-16
+
+## D11.3 Budget tracking
+- Status: LOCKED
+- Decision: `mentor/llm/budget.py` counts requests + approx tokens per provider per UTC day in `data/budget.sqlite` (gitignored runtime). Stop at 90% of RECORDED limits: Groq free {rpd: 1000, tpd: 200000} (docs 2026-10-16); Gemini `{}` = fail-closed until AI Studio console quotas are recorded by the operator (no keys on this machine). Estimates use prompt tokens + max_tokens ceiling (recorded approximation).
+- Alternatives: Header-based remaining-quota tracking (rejected: headers only arrive WITH responses; budget must gate BEFORE the call); no budget (rejected: quota burn kills the demo).
+- Evidence: `tests/test_budget.py` (90% stop on both legs, fail-closed, accumulation).
+- Reason: Free-tier binding constraint is tokens/day; the gate must trip before the provider does.
+- Confidence: Medium (estimate-based accounting; headers would refine)
+- Fallback: Local inference (automatic).
+- Date: 2026-10-16

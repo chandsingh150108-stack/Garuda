@@ -79,9 +79,11 @@ def register_repo(body: SC.RepoRegister):
                    f"{body.sha[:12]} (checkout the pinned commit first)")
     index = str(Path("data/indexes") / f"{body.id}.sqlite")
     REGISTRY[body.id] = {"id": body.id, "path": str(root.resolve()),
-                         "sha": body.sha, "index": index}
+                         "sha": body.sha, "index": index,
+                         "allowlisted_public": bool(body.allowlisted_public)}
     return {"id": body.id, "path": str(root.resolve()), "sha": body.sha,
-            "indexed": Path(index).is_file()}
+            "indexed": Path(index).is_file(),
+            "allowlisted_public": bool(body.allowlisted_public)}
 
 
 @router.post("/repos/{repo_id}/index", response_model=SC.IndexResponse)
@@ -107,8 +109,16 @@ def build_index(repo_id: str):
 def ask_question(repo_id: str, body: SC.AskRequest):
     repo = _repo(repo_id)
     db = _index_db(repo)
-    key = CA.make_key(repo_id, repo["sha"], body.question, CFG.LLM_PROVIDER,
-                      CFG.LLM_MODEL, P.PROMPT_VERSION, body.k)
+    if body.cloud:
+        # Cloud answers are memoized under the requested configuration, not
+        # the serving provider (known only after generation): both cloud
+        # model names bind the entry, so a config change always misses.
+        provider, model = "cloud", (f"{CFG.CLOUD_GROQ_MODEL}"
+                                    f"+{CFG.CLOUD_GEMINI_MODEL}")
+    else:
+        provider, model = CFG.LLM_PROVIDER, CFG.LLM_MODEL
+    key = CA.make_key(repo_id, repo["sha"], body.question, provider, model,
+                      P.PROMPT_VERSION, body.k)
     hit = CA.lookup(db, key)
     if hit is not None:
         AU.write(db, repo_id=repo_id, sha=repo["sha"], question=body.question,
@@ -118,16 +128,20 @@ def ask_question(repo_id: str, body: SC.AskRequest):
                  verdict="cached", cached=True)
         return {**hit, "cached": True}
     out = QA.ask(db, repo["sha"], body.question, k=body.k,
-                 adapter=adapter_factory())
+                 adapter=adapter_factory(), cloud=body.cloud,
+                 allowlisted_public=bool(repo.get("allowlisted_public", False)))
     verdict = _verdict(out, False)
     CA.store(db, key, repo_id, repo["sha"], out)
     AU.write(db, repo_id=repo_id, sha=repo["sha"], question=body.question,
-             response=out, provider=CFG.LLM_PROVIDER, model=CFG.LLM_MODEL,
+             response=out, provider=out.get("provider", CFG.LLM_PROVIDER),
+             model=out.get("model", CFG.LLM_MODEL),
              verdict=verdict, cached=False)
     return {**{k: out.get(k, v) for k, v in
                {"status": "abstain", "segments": [], "missing": [],
-                "evidence": [], "closest": [], "repairs": 0}.items()},
-            "model": out.get("model", ""), "provider": CFG.LLM_PROVIDER,
+                "evidence": [], "closest": [], "repairs": 0,
+                "fallback": False,
+                "cloud_status": "local-only"}.items()},
+            "model": out.get("model", ""), "provider": out.get("provider", ""),
             "prompt_version": out.get("prompt_version", ""), "cached": False}
 
 

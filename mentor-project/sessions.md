@@ -119,3 +119,12 @@
 
 ### Next
 - Phase 11: optional free-cloud adapters with egress gating (Groq/Gemini behind allow_free_cloud + allowlist + redaction + budget, default OFF).
+
+## 2026-10-16 — Phase 11 (free-cloud gating) → GATE PASSED
+- Research dated: Groq free 30 RPM/1K RPD/8K TPM/200K TPD per model (live docs; V4 model name now on official page, still not hardcoded); Gemini unpaid-services trains products (terms eff. 2026-03-23) → Gemini never private; Gemini limits fail-closed (no keys here).
+- Implemented `mentor/llm/{groq_adapter,gemini_adapter,redact,budget}.py`, gateway 429 kind + D11.1 gate + generate_auto, qa groq→gemini→local chain with provider/fallback labels, per-repo allowlisted_public, cloud-aware cache key.
+- Test repairs from measurement: 429 is not retried (correct); cloud tests pin retrieval τ to isolate gating; fallthrough serving label unified to configured provider.
+- Suite 166/166 (165 + 1 skip) with no keys. Commit `phase-11: optional free cloud with gating`.
+
+### Next
+- Phase 12: architecture extraction and deterministic diagrams (component graph from imports/routes, Mermaid by construction).

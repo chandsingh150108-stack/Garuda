@@ -7,6 +7,18 @@ Cloud is default-off; see A10.
 ALLOW_FREE_CLOUD = False
 INDEX_SCHEMA_VERSION = 2
 
+# Phase 11 free-cloud (D11, default OFF). Model names are NEVER hardcoded:
+# they are chosen from the provider's live model list at demo time
+# (`list_models`) and set via these values. Empty = unconfigured = blocked.
+CLOUD_GROQ_MODEL = ""
+CLOUD_GEMINI_MODEL = ""
+CLOUD_MAX_TOKENS = 6000  # redacted-evidence cap per cloud call (chars//4)
+CLOUD_BUDGET_DB = "data/budget.sqlite"
+# Recorded free-tier limits, dated (RESEARCH_LOG.md Phase 11, 2026-10-16).
+# Empty dict = fail-closed: provider never called until limits are recorded.
+GROQ_LIMITS = {"rpd": 1000, "tpd": 200000}
+GEMINI_LIMITS = {}
+
 # Phase 10 service defaults (D10.1-D10.3, LOCKED).
 WEB_ORIGIN = "http://127.0.0.1:5173"  # single local web origin for CORS
 MAX_BODY_BYTES = 1_000_000  # request size limit (413 beyond)

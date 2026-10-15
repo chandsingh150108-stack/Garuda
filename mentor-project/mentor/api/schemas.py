@@ -11,6 +11,7 @@ class RepoRegister(BaseModel):
     path: str = Field(min_length=1)
     sha: str = Field(min_length=7, max_length=64)
     id: str = Field(default="fst", min_length=1, max_length=64)
+    allowlisted_public: bool = False  # Phase 11: public-demo opt-in, default off
 
 
 class RepoInfo(BaseModel):
@@ -18,11 +19,13 @@ class RepoInfo(BaseModel):
     path: str
     sha: str
     indexed: bool
+    allowlisted_public: bool = False
 
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=5000)
     k: int = Field(default=10, ge=1, le=50)
+    cloud: bool = False  # Phase 11: request cloud acceleration (gated)
 
 
 class SegmentOut(BaseModel):
@@ -48,6 +51,8 @@ class AskResponse(BaseModel):
     provider: str = ""
     prompt_version: str = ""
     cached: bool = False
+    fallback: bool = False  # Phase 11: cloud requested but local served
+    cloud_status: str = "local-only"
 
 
 class CodeResponse(BaseModel):
