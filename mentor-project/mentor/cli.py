@@ -57,6 +57,77 @@ def cmd_eval_retrieval(args) -> int:
     return 0
 
 
+def cmd_ask(args) -> int:
+    from mentor.answer import qa as QA
+    out = QA.ask(Path(args.index), args.sha, args.query, k=args.k,
+                 timeout_s=args.timeout)
+    print(f"status={out['status']} repairs={out['repairs']} "
+          f"model={out['model']} prompt={out['prompt_version']}")
+    for seg in out["segments"]:
+        print(f"- [{seg['kind']}] {seg['text']}")
+        for eid in seg["evidence_ids"]:
+            print(f"    [{eid}]")
+    if out["status"] == "abstain":
+        print("missing:")
+        for m in out["missing"]:
+            print(f"  - {m}")
+        for c in out.get("closest", []):
+            print(f"  closest: {c['path']}:{c['lines']}")
+    else:
+        for e in out.get("evidence", []):
+            print(f"  evidence: [{e['id']}] {e['path']}:{e['lines']}")
+    return 0
+
+
+def cmd_eval_answers(args) -> int:
+    import json
+    import random
+    from mentor.answer import qa as QA
+    from mentor.eval import gold as gold_mod
+    from mentor.eval import stats as ST
+    gold = gold_mod.load(Path(args.gold))
+    problems = gold_mod.validate(gold, Path("data/repos/fst"))
+    if problems:
+        print("GOLD INVALID:")
+        for p in problems:
+            print(f"  {p}")
+        return 1
+    ids = [i.id for i in gold.items]
+    random.Random(args.seed).shuffle(ids)
+    half = len(ids) // 2
+    want = set(ids[:half] if args.split == "dev" else ids[half:])
+    items = [i for i in gold.items if i.id in want]
+    rows = []
+    for item in items:
+        out = QA.ask(Path(args.index), args.sha, item.question, k=args.k,
+                     timeout_s=args.timeout)
+        rows.append({"id": item.id, "expected": item.expected_status,
+                     "got": out["status"], "repairs": out["repairs"]})
+        print(f"{item.id}: expected={item.expected_status} got={out['status']}")
+    ans = [r for r in rows if r["expected"] == "answer"]
+    abs_ = [r for r in rows if r["expected"] == "abstain"]
+    fa = sum(1 for r in abs_ if r["got"] == "answer")
+    fab = sum(1 for r in ans if r["got"] == "abstain")
+    summary = {
+        "split": args.split, "seed": args.seed, "n": len(rows),
+        "false_answer": {"n": fa, "of": len(abs_),
+                         "rate": round(fa / len(abs_), 3) if abs_ else 0.0,
+                         "ci95": list(ST.wilson(fa / len(abs_), len(abs_)))
+                         if abs_ else [0.0, 1.0]},
+        "false_abstain": {"n": fab, "of": len(ans),
+                          "rate": round(fab / len(ans), 3) if ans else 0.0,
+                          "ci95": list(ST.wilson(fab / len(ans), len(ans)))
+                          if ans else [0.0, 1.0]},
+    }
+    print(json.dumps(summary))
+    if args.out:
+        Path(args.out).write_text(json.dumps({"rows": rows,
+                                              "summary": summary}, indent=1),
+                                  encoding="utf-8")
+        print(f"wrote {args.out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -74,11 +145,22 @@ def main(argv: list[str] | None = None) -> int:
     sea.add_argument("--index", default="data/indexes/fst.sqlite")
     sea.add_argument("--sha", default=PINNED_SHA)
     evl = sub.add_parser("eval", help="Run evaluation harnesses")
-    evl.add_argument("what", choices=["retrieval"])
+    evl.add_argument("what", choices=["retrieval", "answers"])
     evl.add_argument("--gold", default="evals/gold/v1.yaml")
     evl.add_argument("--index", default="data/indexes/fst.sqlite")
     evl.add_argument("--baseline", default="B3", choices=["B1", "B3"])
     evl.add_argument("--sha", default=PINNED_SHA)
+    evl.add_argument("--split", default="test", choices=["dev", "test"])
+    evl.add_argument("--seed", type=int, default=7)
+    evl.add_argument("--k", type=int, default=10)
+    evl.add_argument("--timeout", type=float, default=120.0)
+    evl.add_argument("--out", default=None)
+    ask = sub.add_parser("ask", help="Grounded answer with evidence citations")
+    ask.add_argument("query")
+    ask.add_argument("--k", type=int, default=10)
+    ask.add_argument("--index", default="data/indexes/fst.sqlite")
+    ask.add_argument("--sha", default=PINNED_SHA)
+    ask.add_argument("--timeout", type=float, default=120.0)
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -90,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_search(args)
     if args.command == "eval" and args.what == "retrieval":
         return cmd_eval_retrieval(args)
+    if args.command == "eval" and args.what == "answers":
+        return cmd_eval_answers(args)
+    if args.command == "ask":
+        return cmd_ask(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

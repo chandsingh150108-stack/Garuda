@@ -99,3 +99,14 @@
 
 ### Next
 - Phase 9: evidence assembly, answer contract, validator, abstention calibration (thresholds τ gated on gold).
+
+## 2026-10-16 — Phase 9 (grounded answers, validator, abstention) → GATE PASSED
+- Research from sources: ICTIR 2025 correctness≠faithfulness (57% post-rationalized, Command-R+); OWASP LLM01 delimiting reduces≠eliminates (schema validated in trusted code is the enforcement); NLI≠factual support (FactRel 84%, RefNLI) → honest limit finalized in docs/ARCHITECTURE.md.
+- Implemented `mentor/answer/{evidence,contract,prompts,validator,abstain,qa}.py` + `mentor ask` + `mentor eval answers --split` CLI + `scripts/calibrate_tau.py`; pydantic==2.13.5 pinned (MIT).
+- Prompt bug found by measurement (own logic): full JSON schema in system prompt → 4B echoes schema (V6 fail); compact shape + example → validated answers.
+- τ calibration (seed 7, one live pass + offline grid): TAU_SCORE=0.02, TAU_COV=0.0 (coverage adds nothing); dev FA 0/6, FAb 3/9; locked-τ held-out test FA 1/2 [0.09,0.91], FAb 4/13 [0.13,0.58] — matches simulation exactly.
+- Residual: q25 billing confabulation cites 10 unrelated blocks yet passes V1–V8 — recorded as the honest limit in action, not a validator bug.
+- Suite 139/139 green (125 prior + 14 new). Commit `phase-09: grounded answers, validator, abstention`.
+
+### Next
+- Phase 10: question-answering service and audit log (FastAPI loopback, provider label, hash-only audit).

@@ -515,3 +515,43 @@
 - Confidence: High (gates measured); Medium (code-answer quality unmeasured until Phase 9)
 - Fallback: 7B-coder at 8192 (all gates pass, 2.3 GB headroom), then 4096, then CPU-only per Phase 8 rollback.
 - Date: 2026-10-15
+
+## D9.1 Evidence format
+- Status: LOCKED
+- Decision: Blocks E1..En assigned by the server in retrieval rank order; each carries path, start/end lines, header symbol, and line-numbered text (`  12 | code`). Text read from `chunks.text` in the index, never the working tree. Budget ~3000 approx tokens (chars//4, D4.1); over-budget hits dropped with `truncated=true`.
+- Alternatives: File reads at answer time (rejected: cited artifact must be the index); larger budget (rejected: 4B context discipline + G2 8K ctx).
+- Evidence: `mentor/answer/evidence.py`; budget test in `tests/test_abstain.py`.
+- Reason: Server-numbered IDs make citation validity true by construction (model never writes paths/lines).
+- Confidence: High
+- Fallback: Smaller k (fewer hits) if budgets bind.
+- Date: 2026-10-16
+
+## D9.2 Answer contract
+- Status: LOCKED
+- Decision: Pydantic models (`mentor/answer/contract.py`): `Answer{status: answer|abstain, segments: [{text, kind: fact|inference|unknown, evidence_ids}], missing: []}`. Full JSON schema travels via the gateway `format` parameter; the PROMPT carries only a compact shape + one example — pasting the full schema makes the 4B model echo it verbatim (measured 2026-10-16).
+- Alternatives: Raw-dict validation (rejected: Pydantic reuses the Phase 10 API schemas, MIT, free); full-schema-in-prompt (rejected by measurement).
+- Evidence: `pydantic==2.13.5` pinned in `requirements.txt`; licence MIT [OFFICIAL: pydantic docs/LICENSE].
+- Reason: One schema definition serves gateway constraint, validation, and (Phase 10) API.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D9.3 Validator rules
+- Status: LOCKED (V1–V8; V9 arrives Phase 14)
+- Decision: `mentor/answer/validator.py` enforces V1 schema-parse+conform, V2 known IDs, V3 facts cited, V4 backticked identifiers substring-matched in cited text, V5 ≤600 chars/≤12 segments, V6 answer needs a cited fact, V7 no URLs/HTML/Markdown-links, V8 no `path:line` strings. Failures return codes fed to the single repair; double failure abstains. Target 100% on `tests/fixtures/invalid_outputs.json`.
+- Alternatives: LLM-as-judge validation (rejected: probabilistic guard for a deterministic property); NLI entailment in the loop (rejected: FactRel shows factual support ≠ NLI entailment; RefNLI shows retrieved premises break reference determinacy — validator checks containment, Phase 22 measures support).
+- Evidence: `tests/test_validator.py` (12-case suite + valid controls); RESEARCH_LOG.md Phase 9.
+- Reason: Deterministic property, deterministic check; semantic entailment is explicitly out of scope (honest limit, docs/ARCHITECTURE.md).
+- Confidence: High
+- Fallback: Per rollback rule, never remove a rule to pass tests; record failure rates instead.
+- Date: 2026-10-16
+
+## D9.4 Abstention (thresholds LOCKED)
+- Status: LOCKED
+- Decision: Two layers. Pre-generation: abstain without a model call when `top_score < TAU_SCORE (0.02)` or (`identifier_coverage < TAU_COV (0.0)` with identifiers present — i.e. coverage gate OFF: grid search found it adds nothing beyond score on dev). Post-generation: abstain when validation + one repair fail. Calibrated on dev split (seed 7, n=15): correct 12/15, accuracy 0.800, false_answer 0, false_abstain 3. Held-out test (n=15): correct 10/15, false_answer 1/2 = 0.500 [0.09, 0.91], false_abstain 4/13 = 0.308 [0.13, 0.58]. Raw: `docs/calibration_p9.json`.
+- Alternatives: Higher taus (rejected: dev accuracy drops); coverage gate on (rejected: no dev gain); τ_score at exact observed-score values is a grid artifact — recorded as limitation, re-check in Phase 22 on more items.
+- Evidence: `scripts/calibrate_tau.py`; `docs/eval_answers_dev.json` + `docs/eval_answers_test.json` (locked-taus confirmation runs).
+- Reason: False answers are the product failure; the gate trades a measured false-abstain rate for zero dev false answers.
+- Confidence: Medium (n=15/split; intervals wide and reported)
+- Fallback: τ_score=0.0 (gate off) restores full-recall behavior; any τ change after held-out use requires a recorded entry.
+- Date: 2026-10-16

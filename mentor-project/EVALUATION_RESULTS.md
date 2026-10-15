@@ -37,6 +37,21 @@ Rule: adopt dense iff fused Recall@10 exceeds B3 by ≥5pp AND full CPU embed <3
 
 Outcome: G1 REJECTED. `DENSE_MODEL = "none"`. dense.py remains a tested-but-disabled path (6 unit tests, fake encoder). Eval tooling (torch/ST) pinned in `requirements-eval.txt`, never in shipped `requirements.txt`. B3 R@10 0.424 stands as the floor for Phase 8+.
 
+## Phase 9 answer eval (grounded QA, 2026-10-16, Qwen3-4B Q4_K_M via llamacpp-vulkan)
+
+Validator: 12/12 invalid-output suite rejected with expected codes (100%), valid answer/abstain controls pass. Injection-in-evidence: injected instruction-following output rejected (V3+V6), qa serves abstention. Repair: invalid→valid yields validated answer with repairs=1; double-invalid abstains. Budget: evidence ≤3000 tok enforced (truncated flag).
+
+τ calibration (seed 7, `scripts/calibrate_tau.py`, one live pass + offline grid): TAU_SCORE=0.02, TAU_COV=0.0 (coverage adds nothing beyond score on dev).
+
+| Split | n | Correct | False-answer | False-abstain |
+|---|---|---|---|---|
+| dev (calibration) | 15 (9 ans / 6 abs) | 12 (0.800) | 0/6 = 0.000 [0.00, 0.39] | 3/9 = 0.333 [0.12, 0.65] |
+| test (locked τ) | 15 (13 ans / 2 abs) | 10 | 1/2 = 0.500 [0.09, 0.91] | 4/13 = 0.308 [0.13, 0.58] |
+
+Commands: `python scripts/calibrate_tau.py --out docs/calibration_p9.json`; `python -m mentor.cli eval answers --split dev|test --seed 7 --out docs/eval_answers_{dev,test}.json` (locked-τ confirmation matched simulation exactly).
+
+Reading: pre-gate abstains cluster at top_score 0.01639 (=1/61, single-retriever rank-1 only). Residual false answer (q25 "billing", no billing code exists): model served a hedged confabulation citing 10 unrelated blocks — passes V1–V8 (valid shape, no checkable identifiers) but semantically unfaithful. This is the documented honest limit in action, not a validator bug; tightening τ further trades measured false abstains (dev grid already optimal).
+
 ## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
 
 Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.
