@@ -132,6 +132,7 @@ def ask_question(repo_id: str, body: SC.AskRequest):
                  allowlisted_public=bool(repo.get("allowlisted_public", False)),
                  why=body.why, repo_path=Path(repo["path"]))
     verdict = _verdict(out, False)
+    _attach_hashes(db, repo["sha"], out)
     CA.store(db, key, repo_id, repo["sha"], out)
     AU.write(db, repo_id=repo_id, sha=repo["sha"], question=body.question,
              response=out, provider=out.get("provider", CFG.LLM_PROVIDER),
@@ -144,6 +145,32 @@ def ask_question(repo_id: str, body: SC.AskRequest):
                 "cloud_status": "local-only"}.items()},
             "model": out.get("model", ""), "provider": out.get("provider", ""),
             "prompt_version": out.get("prompt_version", ""), "cached": False}
+
+
+def _attach_hashes(db: Path, sha: str, out: dict) -> None:
+    """Fill chunk content hashes into evidence refs (stale detection).
+
+    H-refs keep hash "" (history has no content hash; never stale-checked).
+    """
+    import sqlite3
+    refs = [e for e in out.get("evidence", []) if e["id"].startswith("E")]
+    if not refs:
+        return
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        for ref in refs:
+            try:
+                start, end = (int(x) for x in ref["lines"].split("-", 1))
+            except (ValueError, KeyError):
+                continue
+            row = con.execute(
+                "SELECT content_hash FROM chunks WHERE snapshot_sha = ?"
+                " AND path = ? AND start_line = ? AND end_line = ?",
+                (sha, ref["path"], start, end)).fetchone()
+            if row:
+                ref["hash"] = row[0]
+    finally:
+        con.close()
 
 
 @router.get("/repos/{repo_id}/code", response_model=SC.CodeResponse)
@@ -170,8 +197,11 @@ def read_code(repo_id: str,
     if end - start + 1 > CODE_RANGE_CAP:
         end = start + CODE_RANGE_CAP - 1
         truncated = True
+    text = "\n".join(lines[start - 1:end])
+    import hashlib
     return {"path": path, "sha": repo["sha"], "start": start, "end": end,
-            "text": "\n".join(lines[start - 1:end]), "truncated": truncated}
+            "text": text, "truncated": truncated,
+            "content_hash": hashlib.sha256(text.encode("utf-8")).hexdigest()}
 
 
 @router.get("/repos/{repo_id}/status", response_model=SC.StatusResponse)

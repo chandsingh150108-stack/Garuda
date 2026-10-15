@@ -41,7 +41,12 @@ async def _size_limit_middleware(request: Request, call_next):
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Codebase Mentor", version="0.10.0")
+    from pathlib import Path
+
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    app = FastAPI(title="Codebase Mentor", version="0.16.0")
     app.middleware("http")(_size_limit_middleware)
     app.add_middleware(
         CORSMiddleware,
@@ -52,4 +57,18 @@ def create_app() -> FastAPI:
         max_age=600,
     )
     app.include_router(R.router)
+    dist = Path(__file__).resolve().parent.parent.parent / "web" / "dist"
+    if dist.joinpath("index.html").is_file():
+        app.mount("/assets", StaticFiles(directory=str(dist / "assets")),
+                  name="web-assets")
+
+        @app.get("/{path:path}")
+        def spa(path: str):
+            if path.startswith("api/"):
+                return JSONResponse(status_code=404,
+                                    content={"detail": "no such endpoint"})
+            candidate = dist / path
+            if path and candidate.is_file():
+                return FileResponse(str(candidate))
+            return FileResponse(str(dist / "index.html"))
     return app

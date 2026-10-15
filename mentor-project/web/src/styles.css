@@ -1,0 +1,157 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 12px 60px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: baseline;
+  border-bottom: 1px solid #ccc;
+  padding: 8px 0;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+main {
+  flex: 1;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.chip {
+  border: 1px solid #06c;
+  border-radius: 4px;
+  padding: 1px 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chip-stale {
+  border-color: #a00;
+  color: #a00;
+}
+
+.chip-broken {
+  border-color: #a00;
+  color: #a00;
+}
+
+.segment {
+  border-left: 3px solid #06c;
+  padding: 4px 8px;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.segment-inference,
+.segment-unknown {
+  border-left-color: #c80;
+}
+
+.kind-tag {
+  font-size: 0.8em;
+  background: #eee;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.abstain {
+  border: 2px dashed #a80;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.provider {
+  color: #555;
+  font-size: 0.85em;
+}
+
+.error {
+  color: #a00;
+}
+
+.statusbar {
+  position: sticky;
+  bottom: 0;
+  background: #f4f4f4;
+  border-top: 1px solid #ccc;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 6px 4px;
+  font-size: 0.85em;
+}
+
+pre {
+  overflow-x: auto;
+  background: #f8f8f8;
+  padding: 8px;
+}
+
+.ln {
+  color: #888;
+  display: inline-block;
+  min-width: 3em;
+  text-align: right;
+  margin-right: 8px;
+  user-select: none;
+}
+
+.hl-range {
+  background: #fff3b0;
+}
+
+label {
+  display: inline-block;
+  margin: 4px 8px 4px 0;
+}
+
+button {
+  margin: 4px 4px 4px 0;
+}
+
+textarea,
+input {
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  .app {
+    padding: 0 8px 60px;
+  }
+}

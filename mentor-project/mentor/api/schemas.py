@@ -40,6 +40,7 @@ class EvidenceRef(BaseModel):
     id: str
     path: str
     lines: str
+    hash: str = ""  # Phase 16/17: chunk content hash for stale detection
 
 
 class AskResponse(BaseModel):
@@ -64,6 +65,7 @@ class CodeResponse(BaseModel):
     end: int
     text: str
     truncated: bool = False
+    content_hash: str = ""  # Phase 16/17: sha256 of the returned text
 
 
 class StatusResponse(BaseModel):

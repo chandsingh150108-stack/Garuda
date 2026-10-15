@@ -775,3 +775,43 @@
 - Confidence: High
 - Fallback: None.
 - Date: 2026-10-16
+
+## D16.1 Stack
+- Status: LOCKED
+- Decision: React 18.3.1 + TypeScript 5.7.2 + Vite 6.0.7 + Monaco 0.52.2 read-only + Mermaid 11.4.1 + plain CSS (no Tailwind). Pinned in `web/package.json`.
+- Alternatives: Next.js (rejected: unnecessary SSR); CodeMirror (rejected: Monaco line-range story already built); Tailwind (rejected: extra dependency surface for a 6-page demo).
+- Evidence: `web/package.json`; RESEARCH_LOG.md Phase 16 (licences: React/MIT, Router/MIT, Vite/MIT, TS/Apache-2.0, Monaco/MIT, Mermaid/MIT, Vitest/MIT, Playwright/Apache-2.0).
+- Reason: Line ranges without server rendering; fewest moving parts for laptop demo.
+- Confidence: High
+- Fallback: Plain line-numbered code view (`?plain=1`) if Monaco heavy — already implemented in `Code.tsx`.
+- Date: 2026-10-16
+
+## D16.2 Answer rendering
+- Status: LOCKED
+- Decision: Plain text only — segment text as React text nodes (`<p>{s.text}</p>` in `AnswerView.tsx`); no Markdown rendering, no HTML, `dangerouslySetInnerHTML` banned codebase-wide (gate `tests/test_web_build.py`). Mermaid SVG path carries only deterministic server-escaped generator output via DOMPurify-sanitized renderer; model text never enters any HTML path.
+- Alternatives: Markdown/HTML rendering (rejected: XSS class reintroduced for model-controlled text).
+- Evidence: `web/src/components/AnswerView.tsx:11-16,49`; gate test asserts zero hits in `web/src`.
+- Reason: Removes the XSS bug class entirely in v1.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D16.3 Provider display
+- Status: LOCKED
+- Decision: Every answer shows `providerLabel()` + model + repairs (+cached): `LOCAL` (local inference), `CLOUD (public demo repo)` (Groq/Gemini), `LOCAL (fallback)` (cloud tried, local served). Implemented in `web/src/api/client.ts` + `AnswerView.tsx:72-75` (`data-testid="provider-label"`) and `Ask.tsx`.
+- Alternatives: Hidden provider (rejected: failure condition — fallback must be visible, D11.2 labels).
+- Evidence: `client.ts providerLabel()`; `AnswerView` provider paragraph; e2e asserts answer presence (provider visible by construction).
+- Reason: Judges must see what answered and whether a fallback fired.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D16.4 Abstention display
+- Status: LOCKED
+- Decision: Abstention is a first-class result: `data-testid="abstain-panel"` with missing-evidence list + closest-evidence chips (no answer segments). `AnswerView.tsx:21-42`; `Ask.tsx` renders it inline, never as an error toast.
+- Alternatives: Error-toast abstention (rejected: hides the missing list the newcomer needs).
+- Evidence: `AnswerView` abstain branch; `web/tests/answer.test.tsx` abstain case; e2e signup path exercises the answer branch, unit covers abstain.
+- Reason: "I don't know + here's what's missing + closest code" is the product behavior.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16

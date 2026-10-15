@@ -13,6 +13,11 @@ Git repo@SHA (untrusted) ─▶ INGEST (acquire→filters→secrets→manifest)
   ─▶ GATEWAY (loopback-only local [A8/A17]; cloud branch Groq→Gemini→local behind D11.1 six-gate + redaction + 90% budget, default OFF [A10/D11])
   ─▶ ANSWER LAYER p9v1 (evidence → contract → validator V1-V8 → 1 repair → answer|abstain; pre-gate τ_score=0.02) [A11/A12/D9.4]
   ─▶ API (FastAPI 127.0.0.1 only) + WEB (React/Vite/Monaco-readonly/Mermaid/plain-text/CSP) [A15/A16]
+     WEB detail (Phase 16, D16.1–D16.4): 6 pages (Repos/Ask/Code/Arch/Tours/Tasks) + chip/answer/statusbar;
+     Ask shows provider (LOCAL/CLOUD/fallback) + abstain panel with missing list; chip links path+range+SHA
+     (+stale badge via content_hash, wired fully Phase 17); Code is Monaco read-only with SHA banner and
+     `?plain=1` fallback; Mermaid parse-before-render with list fallback; `create_app()` serves `web/dist`
+     + SPA fallback only when built (never committed; `npm run build` reproduces).
 FEATURES: arch (deterministic Mermaid) [A13] · tours (BFS d≤3 fan≤8, resolved|calls vs likely) · why (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN) · tasks (signals+scoring) · freshness (diff+hashes, lazy regen, stale badge) [A14]
 ```
 
