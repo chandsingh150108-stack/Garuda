@@ -66,6 +66,18 @@ Reading: pre-gate abstains cluster at top_score 0.01639 (=1/61, single-retriever
 
 Cache + audit rows landed in the gitignored index DB (runtime data, not committed). Bind refusal, path confinement, range cap, and 413 covered in `tests/test_api.py`.
 
+## Phase 13 tours (precomputed 2026-10-16, 4B narration, validated per step)
+
+`mentor tours precompute --narrate` over evals/tours (cache: gitignored `data/cache/tour_fst_*.json`):
+
+| Tour | Steps (≥3) | LLM-narrated | Drops (all reasoned) | Sequence check |
+|---|---|---|---|---|
+| signup "What happens when a user signs up?" | 8 | 7 | 2 (HTTPException, select: external) | clean |
+| login "How does login issue an access token?" | 6 | 5 | 6 (Depends param; HTTPException/timedelta/jwt/datetime/select external) | clean |
+| crud "How is a new item created?" | 3 | 3 | 0 | clean |
+
+Manual review (VALIDATION_REPORT.md): signup flow correct end-to-end (route → email lookup → validate → create → hash); login chain correct (route → authenticate → email+password verify → token); crud thin but honest — session.add/commit emit no call edges (parser recall limit), tour holds exactly the 3 evidenced steps, nothing invented. No wrong steps in any tour.
+
 ## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
 
 Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.

@@ -137,3 +137,12 @@
 
 ### Next
 - Phase 13: guided tours (BFS flow traces with validated steps, precomputed).
+
+## 2026-10-16 — Phase 13 (guided tours) → GATE PASSED
+- Seeds from code reading, cross-checked vs routes table (crud lines corrected 50-80 → 61-72).
+- Traversal fixes from measurement: {name,alias} import rows, __init__→submodule fallback, module.attr resolution, caller-file disambiguation, external/builtin/param drops. 0 → majority-resolved hops; labels honest (`calls` vs `likely calls, by name`).
+- Narration fixes: /no_think suffix, bare-identifier prompt, module-prefix normalization, deterministic text validated too (D13.3, dual-evidence steps).
+- Precompute (4B): signup 8 (7 llm), login 6 (5 llm), crud 3 (3 llm); manual review: no wrong steps; crud thin by recorded parser cause. Suite 182/182. Commit `phase-13: guided tours`.
+
+### Next
+- Phase 14: "why" questions and history provenance (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN).

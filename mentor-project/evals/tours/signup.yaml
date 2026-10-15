@@ -1,0 +1,21 @@
+# Signup flow: what happens when a user signs up? (D13.1)
+# Seed authored from code reading at 7257e606cb94eada1dca40173e2b7f99dd549bc6:
+# POST {API_V1_STR}/users/signup -> register_user, backend/app/api/routes/users.py
+# decorator line 146, def lines 147-159. Body calls crud.get_user_by_email
+# (users.py:151) and crud.create_user (users.py:158); validates via
+# UserCreate.model_validate (users.py:157).
+name: signup
+question: "What happens when a user signs up?"
+method: post
+route: /signup
+handler: register_user
+handler_file: backend/app/api/routes/users.py
+handler_start: 147
+handler_end: 159
+seed_evidence:
+  path: backend/app/api/routes/users.py
+  start: 146
+  end: 159
+expected_hops:
+  - {to: crud.get_user_by_email, hop: likely}
+  - {to: crud.create_user, hop: likely}

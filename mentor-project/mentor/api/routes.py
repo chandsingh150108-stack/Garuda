@@ -202,3 +202,53 @@ def repo_architecture(repo_id: str):
     return {"repo_id": repo_id, "sha": repo["sha"],
             "nodes": model["nodes"], "edges": model["edges"],
             "mermaid": M.render(model)}
+
+
+def _tour_cache_path(repo_id: str, sha: str, name: str) -> Path:
+    return Path("data/cache") / f"tour_{repo_id}_{name}.json"
+
+
+@router.get("/repos/{repo_id}/tours", response_model=list[SC.TourSummary])
+def list_tours(repo_id: str):
+    repo = _repo(repo_id)
+    from mentor.features import tours as T
+    out = []
+    for path in sorted(Path("evals/tours").glob("*.yaml")):
+        definition = T.load_definition(path)
+        cached = _tour_cache_path(repo_id, repo["sha"], definition["name"])
+        stale = True
+        if cached.is_file():
+            try:
+                stale = T.is_stale(Path(repo["index"]), repo["sha"],
+                                   T.load(cached))
+            except (OSError, ValueError, KeyError):
+                stale = True
+        n_steps = 0
+        if cached.is_file() and not stale:
+            try:
+                n_steps = len(T.load(cached)["steps"])
+            except (OSError, ValueError, KeyError):
+                n_steps = 0
+        out.append({"name": definition["name"],
+                    "question": definition.get("question", ""),
+                    "steps": n_steps, "stale": stale})
+    return out
+
+
+@router.get("/repos/{repo_id}/tours/{name}", response_model=SC.TourResponse)
+def get_tour(repo_id: str, name: str):
+    from mentor.features import tours as T
+    repo = _repo(repo_id)
+    cached = _tour_cache_path(repo_id, repo["sha"], name)
+    if not cached.is_file():
+        raise HTTPException(status_code=404,
+                            detail=f"tour {name!r} not precomputed")
+    try:
+        tour = T.load(cached)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=500, detail=f"tour cache unreadable: {exc}")
+    if tour.get("name") != name or tour.get("sha") != repo["sha"]:
+        raise HTTPException(status_code=409, detail="tour cache mismatch")
+    tour["repo_id"] = repo_id
+    tour["stale"] = T.is_stale(Path(repo["index"]), repo["sha"], tour)
+    return tour

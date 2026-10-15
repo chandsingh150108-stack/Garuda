@@ -162,6 +162,46 @@ def cmd_arch(args) -> int:
     return 0
 
 
+def cmd_tours(args) -> int:
+    import json
+    from mentor.features import tours as T
+    out_dir = Path(args.out)
+    if args.action == "show":
+        tour = T.load(out_dir / f"tour_fst_{args.name}.json")
+        print(f"{tour['name']}: {tour['question']}")
+        for s in tour["steps"]:
+            print(f"  [{s['n']}] {s['hop']}: {s['title']}")
+            print(f"      {s['file']}:{s['start']}-{s['end']} ({s['narrated_by']})")
+        return 0
+    adapter = None
+    if args.narrate:
+        from mentor.answer import qa as QA
+        adapter = QA.default_adapter()
+    names = 0
+    for path in sorted(Path(args.tours).glob("*.yaml")):
+        definition = T.load_definition(path)
+        if args.name and definition["name"] != args.name:
+            continue
+        tour = T.build(Path(args.index), args.sha, definition, adapter)
+        problems = T.check_sequence(tour["sequence"])
+        if problems:
+            print(f"{definition['name']}: SEQUENCE CHECK FAILED {problems}")
+            return 1
+        if len(tour["steps"]) < 3:
+            print(f"{definition['name']}: only {len(tour['steps'])} steps "
+                  f"(need >=3); drops={tour['drops']}")
+            return 1
+        T.save(out_dir / f"tour_fst_{definition['name']}.json", tour)
+        llm = sum(1 for s in tour["steps"] if s["narrated_by"] == "llm")
+        print(f"{definition['name']}: steps={len(tour['steps'])} "
+              f"drops={len(tour['drops'])} narrated_llm={llm}")
+        names += 1
+    if not names:
+        print("no tour definitions matched")
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -207,6 +247,15 @@ def main(argv: list[str] | None = None) -> int:
     arc.add_argument("--sha", default=PINNED_SHA)
     arc.add_argument("--out", default="data/cache/arch_fst.mmd")
     arc.add_argument("--format", default="mmd", choices=["mmd", "json"])
+    trs = sub.add_parser("tours", help="Precomputed guided tours")
+    trs.add_argument("action", choices=["precompute", "show"])
+    trs.add_argument("--index", default="data/indexes/fst.sqlite")
+    trs.add_argument("--sha", default=PINNED_SHA)
+    trs.add_argument("--tours", default="evals/tours")
+    trs.add_argument("--name", default=None)
+    trs.add_argument("--out", default="data/cache")
+    trs.add_argument("--narrate", action="store_true",
+                     help="ask the model for titles/explanations (needs server)")
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -226,6 +275,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_serve(args)
     if args.command == "arch":
         return cmd_arch(args)
+    if args.command == "tours":
+        return cmd_tours(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

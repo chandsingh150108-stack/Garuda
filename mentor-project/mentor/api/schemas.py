@@ -111,3 +111,38 @@ class ArchitectureResponse(BaseModel):
     nodes: list[ArchNode] = Field(default_factory=list)
     edges: list[ArchEdge] = Field(default_factory=list)
     mermaid: str = ""
+
+
+class TourStep(BaseModel):
+    n: int
+    symbol: str
+    file: str
+    start: int
+    end: int
+    hop: str
+    from_symbol: str | None = Field(default=None, alias="from")
+    hop_detail: str = ""
+    title: str = ""
+    explanation: str = ""
+    narrated_by: str = "deterministic"
+    evidence: list[ArchEvidence] = Field(default_factory=list)
+
+    model_config = {"populate_by_name": True}
+
+
+class TourResponse(BaseModel):
+    name: str
+    question: str
+    sha: str
+    steps: list[TourStep] = Field(default_factory=list)
+    drops: list[dict] = Field(default_factory=list)
+    sequence: str = ""
+    dep_hashes: dict[str, str] = Field(default_factory=dict)
+    stale: bool = False
+
+
+class TourSummary(BaseModel):
+    name: str
+    question: str
+    steps: int
+    stale: bool = False

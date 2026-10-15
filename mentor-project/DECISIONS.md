@@ -665,3 +665,43 @@
 - Confidence: High
 - Fallback: Deterministic labels (always).
 - Date: 2026-10-16
+
+## D13.1 Tour definitions
+- Status: LOCKED
+- Decision: Three seeds in `evals/tours/*.yaml` (question, method, route, handler + handler lines), all authored from code reading and cross-checked against the routes table: signup POST /signup → register_user users.py:147-159; login POST /login/access-token → login_access_token login.py:24-42; crud POST /items/ → create_item items.py:62-72. Seed resolves via routes table (method+handler+route-substring); yaml lines are the reviewed record.
+- Alternatives: Free-text tour requests resolved by retrieval (rejected: seed must be exact for reproducibility).
+- Evidence: Code reads recorded in RESEARCH_LOG.md Phase 13; `tests/test_tours.py::test_golden_signup_first_step`.
+- Reason: A wrong seed invents the whole tour; seeds are the one human input.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D13.2 Traversal
+- Status: LOCKED
+- Decision: BFS from the handler over resolved-first then likely edges, depth ≤ 3, fan-out ≤ 8 per node, same-named symbols disambiguated by caller file (edge from_file must match). Resolution upgrades: (1) Phase 3 import rows store {name,alias} dicts — matched on either; (2) `from package import submodule` (empty __init__ shims) falls back to the sibling submodule file; (3) `module.attr(...)` sites resolve the ATTRIBUTE in the module file; (4) external imports, builtins, and caller parameters drop with logged reasons (tours trace first-party flow).
+- Alternatives: Pure name-based hops (rejected: measured 0 resolved hops before the fix — the import-row shape bug); full call-graph precision (rejected: needs LSP, Future).
+- Evidence: `mentor/features/tours.py::_outgoing`; traversal progression measured in-session (0 → majority-resolved hops).
+- Reason: Each rule converts a measured "likely" into a "calls" with evidence, or a principled drop.
+- Confidence: High
+- Fallback: Directory-only arch nodes (no tour) if a flow cannot reach 3 steps.
+- Date: 2026-10-16
+
+## D13.3 Step rule
+- Status: LOCKED
+- Decision: Every step — LLM-narrated AND deterministic fallback — passes through the Phase 9 validator (fact segment citing step evidence); rejection drops the step with a logged reason and renumbers. Resolved steps cite definition + call-site chunks (the claim spans both). CRUD tour holds exactly 3 steps: session.add/commit produce no call edges (parser limitation, recorded) — minimum met honestly, no invention.
+- Alternatives: Unevidenced fallback steps (rejected: failure condition).
+- Evidence: `tours.narrate` (returns None on rejection); precompute logs (signup 8, login 6, crud 3 steps).
+- Reason: D13.3 makes no exception for fallbacks; structure never depends on the model.
+- Confidence: High
+- Fallback: Narrow the tour (rollback rule), never invent steps.
+- Date: 2026-10-16
+
+## D13.4 Labelling
+- Status: LOCKED
+- Decision: `calls` only for import-resolved definitions; everything else "likely calls, by name" (tested on fixture + real index). Deterministic titles use bare identifiers (module prefixes name the call site, not the chunk — normalized before validation AND display).
+- Alternatives: Confident labels for likely hops (rejected: failure condition).
+- Evidence: `tests/test_tours.py::test_label_rule_resolved_vs_likely`.
+- Reason: The label IS the uncertainty communication (C9).
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16

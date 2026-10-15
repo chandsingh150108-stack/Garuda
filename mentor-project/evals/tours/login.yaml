@@ -1,0 +1,20 @@
+# Login flow: how is an access token issued? (D13.1)
+# Seed from code reading at 7257e606cb94eada1dca40173e2b7f99dd549bc6:
+# POST /login/access-token -> login_access_token,
+# backend/app/api/routes/login.py (def line 25). Body calls crud.authenticate
+# and security.create_access_token (backend/app/core/security.py).
+name: login
+question: "How does login issue an access token?"
+method: post
+route: /login/access-token
+handler: login_access_token
+handler_file: backend/app/api/routes/login.py
+handler_start: 24
+handler_end: 42
+seed_evidence:
+  path: backend/app/api/routes/login.py
+  start: 23
+  end: 42
+expected_hops:
+  - {to: crud.authenticate, hop: likely}
+  - {to: security.create_access_token, hop: likely}

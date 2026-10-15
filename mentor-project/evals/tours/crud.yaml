@@ -1,0 +1,19 @@
+# CRUD flow: how is an item created? (D13.1)
+# Seed from code reading at 7257e606cb94eada1dca40173e2b7f99dd549bc6:
+# POST /items/ -> create_item, backend/app/api/routes/items.py, which calls
+# crud.create_item (backend/app/crud.py line 63) persisting the Item model
+# (backend/app/models.py).
+name: crud
+question: "How is a new item created?"
+method: post
+route: /items/
+handler: create_item
+handler_file: backend/app/api/routes/items.py
+handler_start: 62
+handler_end: 72
+seed_evidence:
+  path: backend/app/api/routes/items.py
+  start: 61
+  end: 72
+expected_hops:
+  - {to: crud.create_item, hop: likely}
