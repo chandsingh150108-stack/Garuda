@@ -23,6 +23,9 @@ GEMINI_LIMITS = {}
 WEB_ORIGIN = "http://127.0.0.1:5173"  # single local web origin for CORS
 MAX_BODY_BYTES = 1_000_000  # request size limit (413 beyond)
 AUDIT_STORE_TEXT = False  # audit keeps hashes only unless explicitly enabled
+
+# Phase 14 history (D14.3): `gh` PR lookup is OFF by default (no network).
+GH_PR_LOOKUP = False
 DEFAULT_REPO_ID = "fst"
 
 # Ingest limits (spec Phase 2, LOCKED via D2 decisions)

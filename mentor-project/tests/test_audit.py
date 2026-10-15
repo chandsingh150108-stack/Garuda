@@ -64,7 +64,7 @@ def test_ask_writes_exactly_one_hash_only_row(tmp_path):
     assert q_text is None and a_text is None  # hashes only by default
     assert provider == "llamacpp" and status == "abstain"
     assert verdict in ("abstained-pre", "abstained-post")
-    assert pv == "p9v1"
+    assert pv == "p9v2"
     logged_ids = [e["id"] for e in json.loads(ev_json)]
     served_ids = [c["id"] for c in r.json()["closest"]]
     assert logged_ids == served_ids and logged_ids

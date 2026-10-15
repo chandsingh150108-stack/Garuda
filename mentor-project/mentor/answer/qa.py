@@ -95,6 +95,56 @@ def _serve_with_cloud(db: Path, sha: str, query: str, blocks: list[dict],
     return None, CFG.LLM_PROVIDER, CFG.LLM_MODEL, True, status, red_blocks
 
 
+MAX_HISTORY_BLOCKS = 6
+
+
+def _attach_history(repo_path: Path, sha: str,
+                    blocks: list[dict]) -> tuple[list[dict], list[str]]:
+    """Append commit-record H-blocks for the top evidence files (D14.1).
+
+    Blame covers each block's range; file log adds recency. At most
+    MAX_HISTORY_BLOCKS across the top-3 distinct files, rank order. Never
+    raises: git failures yield fewer (or zero) blocks, and the caller then
+    has no HISTORY to cite — the model must infer or abstain.
+    """
+    from mentor.features import why as HY
+    seen_files: list[str] = []
+    for b in blocks:
+        if b["path"] not in seen_files:
+            seen_files.append(b["path"])
+        if len(seen_files) >= 3:
+            break
+    hblocks: list[dict] = []
+    notes: list[str] = []
+    for path in seen_files:
+        anchor = next(b for b in blocks if b["path"] == path)
+        history = HY.history_for_symbol(repo_path, path, anchor["start_line"],
+                                        anchor["end_line"])
+        new = HY.history_blocks(history, path,
+                                start_id=len(hblocks) + 1)
+        if len(hblocks) + len(new) > MAX_HISTORY_BLOCKS:
+            new = new[:MAX_HISTORY_BLOCKS - len(hblocks)]
+        hblocks.extend(new)
+        if not new:
+            notes.append(f"no history for {path}")
+        if len(hblocks) >= MAX_HISTORY_BLOCKS:
+            break
+    if CFG.GH_PR_LOOKUP and hblocks:
+        import re as _re
+        prs = _re.findall(r"#(\d+)",
+                          " ".join(b.get("text", "") for b in hblocks))
+        if prs and len(hblocks) < MAX_HISTORY_BLOCKS + 2:
+            pr = HY.gh_pr(int(prs[0]), enabled=True)
+            if pr and pr.get("url"):
+                hblocks.append({
+                    "id": f"H{len(hblocks) + 1}", "kind": "history",
+                    "path": "", "lines": "-",
+                    "text": (f"PR #{pr['pr']} by {pr['author']} "
+                             f"({pr['url']}) titled: {pr['title']}"),
+                    "sha": "", "author": pr["author"], "date": ""})
+    return blocks + hblocks, notes
+
+
 def _messages(query: str, blocks: list[dict]) -> list[dict]:
     system = P.build_system(CFG.LLM_SYSTEM_SUFFIX)
     body = "\n\n".join([P.EVIDENCE_HEADER] + [EV.render(b) for b in blocks])
@@ -118,12 +168,17 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
         timeout_s: float = 120.0, max_tokens: int = 1024,
         tau_score: float = AB.TAU_SCORE,
         tau_cov: float = AB.TAU_COV, cloud: bool = False,
-        allowlisted_public: bool = False) -> dict:
+        allowlisted_public: bool = False, why: bool = False,
+        repo_path: Path | None = None) -> dict:
     """End-to-end grounded answer. Always returns a contract-shaped dict.
 
     cloud=True requests cloud acceleration (D11): Groq primary, Gemini
     fallback, local last. Every fallback keeps the output contract; the
     response carries provider/fallback/cloud_status labels (Phase 16 UI).
+
+    why=True appends commit-record H-blocks for the top evidence files
+    (Phase 14): causal claims then need H citations (V9) or inference kind.
+    Requires repo_path (the checkout); without it, no history is attached.
     """
     res = S.search(db, sha, query, k=k)
     gate = AB.pre_gate(res["confidence"],
@@ -141,7 +196,11 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
         adapter = default_adapter()
     serving, serving_model = CFG.LLM_PROVIDER, CFG.LLM_MODEL
     fallback, cloud_status = False, "local-only"
-    use_blocks, first_parsed = blocks, None
+    use_blocks, first_parsed = list(blocks), None
+    history_notes: list[str] = []
+    if why and repo_path is not None:
+        use_blocks, history_notes = _attach_history(
+            repo_path, sha, blocks)
     if cloud:
         first_parsed, serving, serving_model, fallback, cloud_status, \
             use_blocks = _serve_with_cloud(
@@ -149,10 +208,13 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
                 allowlisted_public)
     messages = _messages(query, use_blocks)
     options = {"max_tokens": max_tokens}
+    h_tokens = sum(EV.approx_tokens(b.get("text", "")) for b in use_blocks
+                   if b["id"].startswith("H"))
     base = {"repairs": 0, "prompt_version": P.PROMPT_VERSION,
             "model": serving_model, "provider": serving, "fallback": fallback,
             "cloud_status": cloud_status,
-            "evidence_tokens": env["used_tokens"]}
+            "evidence_tokens": env["used_tokens"] + h_tokens,
+            "history_notes": history_notes}
     if first_parsed is None:
         try:
             parsed = GW.generate(adapter, messages, C.ANSWER_SCHEMA, options,
@@ -187,14 +249,32 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
         closest = [{"id": b["id"], "path": b["path"],
                     "lines": f"{b['start_line']}-{b['end_line']}",
                     "header": b["header"]} for b in blocks[:3]]
+    segments = []
+    for s in answer.segments:
+        seg = s.model_dump()
+        # Server-side provenance default (D14.1): derived from pointers, not
+        # from the model's label — an explicit model label is kept as-is.
+        if seg.get("provenance") is None:
+            ids = seg.get("evidence_ids", [])
+            if s.kind == "fact" and any(
+                    i.startswith("H") for i in ids):
+                seg["provenance"] = "history"
+            elif s.kind == "fact":
+                seg["provenance"] = "proven"
+            elif s.kind == "inference":
+                seg["provenance"] = "inferred"
+            else:
+                seg["provenance"] = "unknown"
+        segments.append(seg)
     return {"status": answer.status,
-            "segments": [s.model_dump() for s in answer.segments],
+            "segments": segments,
             "missing": list(answer.missing),
             "repairs": repairs, "prompt_version": P.PROMPT_VERSION,
             "model": serving_model, "provider": serving, "fallback": fallback,
             "cloud_status": cloud_status,
             "evidence_tokens": env["used_tokens"],
             "closest": closest,
-            "evidence": [{"id": b["id"], "path": b["path"],
-                          "lines": f"{b['start_line']}-{b['end_line']}"}
+            "evidence": [{"id": b["id"], "path": b["path"], "lines": (
+                b["lines"] if "lines" in b
+                else f"{b['start_line']}-{b['end_line']}")}
                          for b in use_blocks]}

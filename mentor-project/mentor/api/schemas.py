@@ -26,12 +26,14 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=5000)
     k: int = Field(default=10, ge=1, le=50)
     cloud: bool = False  # Phase 11: request cloud acceleration (gated)
+    why: bool = False  # Phase 14: attach commit-record history blocks
 
 
 class SegmentOut(BaseModel):
     text: str
     kind: str
     evidence_ids: list[str] = Field(default_factory=list)
+    provenance: str | None = None  # Phase 14: proven|history|inferred|unknown
 
 
 class EvidenceRef(BaseModel):

@@ -26,6 +26,13 @@ _URL = re.compile(r"https?://|www\.[a-z0-9]", re.IGNORECASE)
 _HTML = re.compile(r"<[a-zA-Z/!][^<>]*>")
 _MD_LINK = re.compile(r"!?\[[^\]]*\]\([^)]*\)")
 _PATH_LINE = re.compile(r"[A-Za-z0-9_\-./]+\.[A-Za-z0-9]{1,8}:\d+")
+# V9: causal/design claims need history. Tight on purpose: "to <verb>"
+# alone is everywhere; these markers state purpose or causation.
+_CAUSAL = re.compile(
+    r"\b(because|in order to|so that|to avoid|to prevent|exists to|"
+    r"designed to|intended to|was (created|added|introduced) to)\b",
+    re.IGNORECASE)
+_HISTORY_ID = re.compile(r"^H[1-9][0-9]*$")
 
 
 @dataclass
@@ -132,4 +139,16 @@ def validate(output: str | dict, blocks: list[dict]) -> list[VError]:
             "V6_NO_CITED_FACT",
             "status=answer requires at least one fact segment with a "
             "valid citation"))
+    # V9 (Phase 14, D14.2): a causal/design claim stated as fact requires a
+    # HISTORY citation (H-id) or must be kind=inference (labelled guess in a
+    # separate section). Enforcement is on pointers, not on the provenance
+    # label. History records what was written down, not what is true.
+    for i, seg in enumerate(answer.segments):
+        if seg.kind == "fact" and _CAUSAL.search(seg.text):
+            good_ids = [e for e in seg.evidence_ids if e in known]
+            if not any(_HISTORY_ID.match(e) for e in good_ids):
+                errors.append(VError(
+                    "V9_CAUSAL_WITHOUT_HISTORY",
+                    f"segments[{i}]: causal claim stated as fact requires a "
+                    "history (H-id) citation or kind=inference"))
     return errors

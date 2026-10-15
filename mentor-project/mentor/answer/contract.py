@@ -15,6 +15,12 @@ class Segment(BaseModel):
     text: str = Field(min_length=1)
     kind: Literal["fact", "inference", "unknown"] = "fact"
     evidence_ids: list[str] = Field(default_factory=list)
+    # Phase 14 provenance (D14.1): proven = code evidence only; history = a
+    # commit record is cited (H-id); inferred = marked guess, separate
+    # section; unknown = no evidence. Enforcement is on evidence IDs (V9),
+    # not on this label — labels are display, pointers are proof.
+    provenance: Literal["proven", "history", "inferred",
+                        "unknown"] | None = None
 
 
 class Answer(BaseModel):

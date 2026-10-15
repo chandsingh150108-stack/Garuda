@@ -129,7 +129,8 @@ def ask_question(repo_id: str, body: SC.AskRequest):
         return {**hit, "cached": True}
     out = QA.ask(db, repo["sha"], body.question, k=body.k,
                  adapter=adapter_factory(), cloud=body.cloud,
-                 allowlisted_public=bool(repo.get("allowlisted_public", False)))
+                 allowlisted_public=bool(repo.get("allowlisted_public", False)),
+                 why=body.why, repo_path=Path(repo["path"]))
     verdict = _verdict(out, False)
     CA.store(db, key, repo_id, repo["sha"], out)
     AU.write(db, repo_id=repo_id, sha=repo["sha"], question=body.question,

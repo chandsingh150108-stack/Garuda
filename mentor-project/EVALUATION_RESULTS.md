@@ -78,6 +78,12 @@ Cache + audit rows landed in the gitignored index DB (runtime data, not committe
 
 Manual review (VALIDATION_REPORT.md): signup flow correct end-to-end (route → email lookup → validate → create → hash); login chain correct (route → authenticate → email+password verify → token); crud thin but honest — session.add/commit emit no call edges (parser recall limit), tour holds exactly the 3 evidenced steps, nothing invented. No wrong steps in any tour.
 
+## Phase 14 why eval (4 gold why questions, --why with history, 2026-10-16, 4B)
+
+`mentor eval answers --category why --why`: q21 answer, q22 abstain (pre-gate; false abstain), q23/q24 abstain (correct UNKNOWN). False-answer 0/2 [0.00, 0.66].
+
+Manual audit (zero inferred-as-fact REQUIRED — met): q21 served one fact citing E1+H2 where H2 IS the gold commit 689d7105 ("constant time, to avoid enumeration attacks") — a genuine HISTORY-grounded causal answer (provenance defaulted to history). q22's open-registration rationale (commit 1f686689) exists in history but retrieval never surfaced the code (pre-gate abstain — retrieval floor, not a provenance failure). q23/q24 correctly UNKNOWN: commits record the change but no rationale, and the model abstained instead of fabricating.
+
 ## Phase 8 gate G2 (local-model decision, 2026-10-15, target laptop RTX 5060 8GB)
 
 Backend `llamacpp-vulkan` (llama.cpp b11429 win-vulkan-x64, `-ngl 99 -c 8192 -np 1`); Ollama remains the documented default, CUDA re-measurement is future work (D8.0). Validity probe = Phase 9-contract-shaped `{status, segments[]}` on the 22 answerable gold items, no repair. Raw JSON: `docs/bench_7b.json`, `docs/bench_4b.json`.

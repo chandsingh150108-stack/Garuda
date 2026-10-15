@@ -705,3 +705,33 @@
 - Confidence: High
 - Fallback: None.
 - Date: 2026-10-16
+
+## D14.1 Provenance labels
+- Status: LOCKED
+- Decision: Per-segment provenance: `proven` (code evidence only), `history` (an H commit-record cited), `inferred` (labelled guess, separate section by kind), `unknown`. Labels DEFAULT server-side from pointers (fact+H→history, fact→proven, inference→inferred, unknown→unknown); an explicit model label is kept. Enforcement is on evidence IDs (V9), never on the label — labels are display, pointers are proof.
+- Alternatives: Model-assigned labels only (rejected: cheap talk, unenforced); no labels (rejected: acceptance requires labelled answers).
+- Evidence: `qa.ask` provenance defaulting; `tests/test_why.py::test_provenance_derived_from_pointers_not_labels`.
+- Reason: A model can write "history" next to any claim; only the H-citation makes it so.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## D14.2 Causal rule (V9)
+- Status: LOCKED
+- Decision: Validator V9 rejects fact-kind segments whose text matches causal markers (because|in order to|so that|to avoid|to prevent|exists to|designed to|intended to|was created/added/introduced to) unless they cite ≥1 H-block. Tight by design ("to <verb>" alone is everywhere). History means "recorded rationale" (commit text is untrusted input), never "proven intent" — the honest limit extends here.
+- Alternatives: Broad causal regex (rejected: false positives on benign flow text); NLI entailment check (rejected: Phase 9 honest limit).
+- Evidence: `tests/test_validator_v9.py` (reject/accept/inference/label cases).
+- Reason: "X exists because Y" as fact without a record is the most misleading output class; V9 makes it unservable.
+- Confidence: Medium (heuristic markers, not semantic understanding — recorded limitation)
+- Fallback: Per rollback rule, never remove V9 to pass; record rejection rates.
+- Date: 2026-10-16
+
+## D14.3 Optional network
+- Status: LOCKED
+- Decision: `gh pr view` lookup exists (`why.gh_pr`) but is OFF by default (`GH_PR_LOOKUP=false`); disabled path returns None with zero socket attempts (SocketGuard-verified). When enabled, PR number/title/URL/author appends as an H-block. fst history is deep enough locally (1535 commits, PR refs in squash summaries) that offline is the default.
+- Alternatives: Always-on PR enrichment (rejected: network dependency + failure mode for zero offline gain on this repo).
+- Evidence: `tests/test_why.py::test_gh_disabled_makes_no_network_call`; `gh` absent on this machine (recorded).
+- Reason: Offline-first product; network is an accelerator, never a requirement.
+- Confidence: High
+- Fallback: Local blame/log (always).
+- Date: 2026-10-16

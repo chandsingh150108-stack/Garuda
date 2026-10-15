@@ -146,3 +146,11 @@
 
 ### Next
 - Phase 14: "why" questions and history provenance (blame/log + PROVEN/HISTORY/INFERRED/UNKNOWN).
+
+## 2026-10-16 — Phase 14 (why provenance) → GATE PASSED
+- why.py: blame final-line semantics + boundary header carry-forward (both measured bugs fixed), utf-8 for emoji summaries, H-blocks state records-not-truth, gh off-by-default socket-verified.
+- V9 (tight causal markers) + provenance-from-pointers + prompt p9v2; EV.render history branch; H-refs in qa evidence/audit shapes.
+- Live why eval: q21 answers citing the EXACT gold commit 689d7105 (provenance history); q22 pre-gate false abstain (retrieval floor); q23/q24 correct UNKNOWNs. Audit: zero inferred-as-fact. Suite 194/194. Commit `phase-14: why questions and provenance`.
+
+### Next
+- Phase 15: starter tasks (signal-ranked, evidence-linked, difficulty-scored).

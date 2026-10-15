@@ -55,7 +55,14 @@ def build(db: Path, sha: str, hits: list[dict],
 
 
 def render(block: dict) -> str:
-    """Line-numbered rendering for the model prompt (untrusted data)."""
+    """Line-numbered rendering for the model prompt (untrusted data).
+
+    History blocks (H-ids, Phase 14) render as commit records, not code:
+    their text is a recorded message, never source lines.
+    """
+    if block.get("kind") == "history" or block["id"].startswith("H"):
+        return (f"[{block['id']}] commit record for {block.get('path', '?')} "
+                f"(lines {block.get('lines', '-')})\n{block.get('text', '')}")
     lines = block["text"].splitlines() or [""]
     numbered = "\n".join(
         f"{block['start_line'] + i:>6} | {line}" for i, line in enumerate(lines))

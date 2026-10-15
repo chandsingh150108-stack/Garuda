@@ -60,7 +60,8 @@ def cmd_eval_retrieval(args) -> int:
 def cmd_ask(args) -> int:
     from mentor.answer import qa as QA
     out = QA.ask(Path(args.index), args.sha, args.query, k=args.k,
-                 timeout_s=args.timeout)
+                 timeout_s=args.timeout, why=args.why,
+                 repo_path=Path(args.repo) if args.why else None)
     print(f"status={out['status']} repairs={out['repairs']} "
           f"model={out['model']} prompt={out['prompt_version']}")
     for seg in out["segments"]:
@@ -97,10 +98,14 @@ def cmd_eval_answers(args) -> int:
     half = len(ids) // 2
     want = set(ids[:half] if args.split == "dev" else ids[half:])
     items = [i for i in gold.items if i.id in want]
+    if getattr(args, "category", None):
+        # Category runs (e.g. the four why questions) span the frozen split.
+        items = [i for i in gold.items if i.category == args.category]
     rows = []
     for item in items:
         out = QA.ask(Path(args.index), args.sha, item.question, k=args.k,
-                     timeout_s=args.timeout)
+                     timeout_s=args.timeout, why=args.why,
+                     repo_path=Path("data/repos/fst") if args.why else None)
         rows.append({"id": item.id, "expected": item.expected_status,
                      "got": out["status"], "repairs": out["repairs"]})
         print(f"{item.id}: expected={item.expected_status} got={out['status']}")
@@ -226,6 +231,10 @@ def main(argv: list[str] | None = None) -> int:
     evl.add_argument("--sha", default=PINNED_SHA)
     evl.add_argument("--split", default="test", choices=["dev", "test"])
     evl.add_argument("--seed", type=int, default=7)
+    evl.add_argument("--category", default=None,
+                     help="filter gold items (e.g. why)")
+    evl.add_argument("--why", action="store_true",
+                     help="attach history blocks (needs live repo)")
     evl.add_argument("--k", type=int, default=10)
     evl.add_argument("--timeout", type=float, default=120.0)
     evl.add_argument("--out", default=None)
@@ -235,6 +244,8 @@ def main(argv: list[str] | None = None) -> int:
     ask.add_argument("--index", default="data/indexes/fst.sqlite")
     ask.add_argument("--sha", default=PINNED_SHA)
     ask.add_argument("--timeout", type=float, default=120.0)
+    ask.add_argument("--why", action="store_true")
+    ask.add_argument("--repo", default="data/repos/fst")
     srv = sub.add_parser("serve", help="Serve the loopback QA API")
     srv.add_argument("--index", default="data/indexes/fst.sqlite")
     srv.add_argument("--repo", default="data/repos/fst")

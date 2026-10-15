@@ -1,0 +1,51 @@
+{
+ "rows": [
+  {
+   "id": "q21",
+   "expected": "answer",
+   "got": "answer",
+   "repairs": 0
+  },
+  {
+   "id": "q22",
+   "expected": "answer",
+   "got": "abstain",
+   "repairs": 0
+  },
+  {
+   "id": "q23",
+   "expected": "abstain",
+   "got": "abstain",
+   "repairs": 0
+  },
+  {
+   "id": "q24",
+   "expected": "abstain",
+   "got": "abstain",
+   "repairs": 0
+  }
+ ],
+ "summary": {
+  "split": "test",
+  "seed": 7,
+  "n": 4,
+  "false_answer": {
+   "n": 0,
+   "of": 2,
+   "rate": 0.0,
+   "ci95": [
+    0.0,
+    0.6576280471103807
+   ]
+  },
+  "false_abstain": {
+   "n": 1,
+   "of": 2,
+   "rate": 0.5,
+   "ci95": [
+    0.09452865480086614,
+    0.9054713451991339
+   ]
+  }
+ }
+}
