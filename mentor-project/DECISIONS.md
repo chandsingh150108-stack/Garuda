@@ -855,3 +855,33 @@
 - Confidence: High
 - Fallback: Full rebuild.
 - Date: 2026-10-16
+
+## D18.1 Threat list
+- Status: LOCKED
+- Decision: Adopt T1–T14 in `SECURITY_THREAT_MODEL.md` as the authoritative list. Each row names boundary + control + test ID; a control without a test is a failed gate. New T3 control added in this phase: `abstain.is_bulk_dump` refuses dump-all phrasing pre-retrieval (no evidence attached).
+- Alternatives: Prose-only threat model (rejected: untestable claims are unproven per spec).
+- Evidence: `tests/security/` 22/22 green; threat model table all PASS/PASS-with-residuals.
+- Reason: Untrusted code + model calls need tested boundaries, not assurances.
+- Confidence: High
+- Fallback: None (residuals listed with owner + reason instead).
+- Date: 2026-10-16
+
+## D18.2 Static tools
+- Status: LOCKED
+- Decision: Bandit 1.9.4 (Python SAST) + pip-audit 2.10.1 (deps) + `npm audit --omit=dev` (web prod deps), pinned in `requirements-security.txt`, run via `scripts/security_check.ps1` (Windows, primary) / `.sh`. All free/open (Apache-2.0/MIT).
+- Alternatives: Commercial SAST (rejected: $0 budget); audit-only-without-tests (rejected: tools complement, never replace, the threat tests).
+- Evidence: Runs recorded in `SECURITY_THREAT_MODEL.md` + `VALIDATION_REPORT.md` (Bandit 0 high; pip-audit clean; npm 12→4 after minor upgrades).
+- Reason: Free, auditable, runnable on the laptop before every demo.
+- Confidence: High
+- Fallback: Manual review of diffs if a tool is uninstallable (recorded).
+- Date: 2026-10-16
+
+## D18.3 Residual risk
+- Status: LOCKED
+- Decision: Four residuals recorded with owner (project author) + reason: (1) react-router advisories (v7-only fix; unreachable pattern in our Link use); (2) katex-via-mermaid (v12-only fix; deterministic-diagram path only); (3) no dependency hash enforcement; (4) SocketGuard records intent, proves nothing at OS level (Phase 19 offline check is the proof).
+- Alternatives: Silent acceptance (rejected: failure condition); breaking-major upgrades now (rejected: router v7 + mermaid v12 API churn out of scope with unmeasured demo risk).
+- Evidence: `SECURITY_THREAT_MODEL.md` Residuals section; npm before/after numbers.
+- Reason: Honest limits beat hidden ones; each residual has a re-check trigger.
+- Confidence: Medium (exposure analysis is judgment, stated as such).
+- Fallback: Upgrade when majors mature; re-audit demo week.
+- Date: 2026-10-16

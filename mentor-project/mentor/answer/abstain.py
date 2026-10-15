@@ -9,6 +9,8 @@ Layer 2 (qa.py): abstain when validation + one repair both fail.
 """
 from __future__ import annotations
 
+import re
+
 # Calibrated 2026-10-16 on the dev split (seed 7); locked in DECISIONS.md D9.4.
 # Grid maximized dev correct decisions (tie-break: fewer false answers, then
 # lower taus). Coverage gate adds nothing beyond score on dev -> 0.0 (off).
@@ -40,3 +42,24 @@ def abstention(blocks: list[dict], missing: list[str], reason: str) -> dict:
                 "header": b["header"]} for b in blocks[:3]]
     return {"status": "abstain", "segments": [], "missing": missing,
             "closest": closest, "abstain_reason": reason}
+
+
+_DUMP_VERBS = r"(list\s+all|dump|export(\s+all)?|show\s+me\s+all|print\s+all)"
+_SECRET_NOUNS = (r"(passwords?|secrets?|api[\s_-]?keys?|tokens?|credentials?|"
+                 r"private[\s_-]?keys?)")
+_BULK_PATTERNS = (
+    re.compile(_DUMP_VERBS + r"\s+(the\s+|all\s+)?" + _SECRET_NOUNS,
+               re.IGNORECASE),
+    re.compile(_SECRET_NOUNS + r"\s+(for\s+)?" + _DUMP_VERBS, re.IGNORECASE),
+    re.compile(r"^\s*" + _SECRET_NOUNS + r"\s*\??\s*$", re.IGNORECASE),
+)
+
+
+def is_bulk_dump(query: str) -> bool:
+    """True for bulk-exfiltration phrasing (spec Phase 18, T3 control).
+
+    Deliberately narrow (dump-all verbs + secret nouns, or a bare secret
+    word): mechanism questions such as "How are passwords hashed?" never
+    match — verified in `tests/security/test_t3_exfiltration.py`.
+    """
+    return any(p.search(query) for p in _BULK_PATTERNS)

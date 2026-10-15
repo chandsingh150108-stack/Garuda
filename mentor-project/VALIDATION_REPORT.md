@@ -81,3 +81,10 @@
 | 2026-10-16 | Phase 17 timing | scripted scratch-file edit + reindex on tmp copies of the primary index | 0.68 s (< 60 s gate) | Added 1 file / 1 chunk; pinned `fst.sqlite` untouched; scratch reverted; recorded EVALUATION_RESULTS.md |
 | 2026-10-16 | Phase 17 e2e | `npx playwright test` (serve only, no model) | PASS 3/3 | citation→SHA (cached) + NEW stale-badge on `&hash=deadbeef` mismatch + layout 1280/400 |
 | 2026-10-16 | Phase 17 compat | `pytest tests/test_api.py -q` | PASS 5/5 | Extended `/status` (head_sha/dirty/dirty_files/changed) backward-compatible; live status shows head==indexed, dirty=false |
+| 2026-10-16 | Phase 18 research | OWASP LLM01 re-read + tool scopes + corpus design | CONFIRMED | No new architecture; Bandit B608/B603 informational at our call shapes; corpus tests enforcement, not gullibility |
+| 2026-10-16 | Phase 18 decisions | D18.1–D18.3 recorded | DONE | T1–T14 authoritative + new T3 bulk-dump control; static-tool pins; 4 residuals with owner |
+| 2026-10-16 | Phase 18 T3 control | `abstain.is_bulk_dump` + pre-retrieval refusal in `qa.ask` | MEASURED | 6 dump phrasings refused with zero model calls; 4 mechanism questions (incl. password-hashing gold style) pass the guard |
+| 2026-10-16 | Phase 18 unit | `pytest tests/security -q` (incl. 20-payload corpus) | PASS 22/22 | T1/T2(40 rejections+5 URL)/T3/T4/T6/T7(4 formats)/T12(AST)/T13/T14; corpus carries no real-secret formats |
+| 2026-10-16 | Phase 18 bandit | `bandit -r mentor -q` (1.9.4, 5993 LOC) | 0 High / 8 Med / 18 Low, all justified | Med = B608 `?`-placeholder IN-lists + B310 egress-guarded urlopen; Lows = argv-list subprocess, seeded eval shuffle, internal asserts, documented fail-open defaults |
+| 2026-10-16 | Phase 18 pip-audit | `pip_audit` (2.10.1) | CLEAN | No known vulnerabilities in pinned dependencies |
+| 2026-10-16 | Phase 18 npm audit | `npm audit --omit=dev` before/after minors | 12→4 (0 high left) | Upgraded react-router-dom 6.28.0→6.30.6 + mermaid 11.4.1→11.17.2 (exact pins); rebuilt 42 s + vitest 5/5 + build gate re-verified; 4 remaining need breaking majors → residuals 1–2 |

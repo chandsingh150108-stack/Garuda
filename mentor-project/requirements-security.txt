@@ -1,0 +1,4 @@
+# Pinned security-check tooling (NOT shipped). Installed 2026-10-16 for the
+# Phase 18 gate. Both Apache-2.0, free, PyPI-installable.
+bandit==1.9.4
+pip-audit==2.10.1

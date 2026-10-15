@@ -180,6 +180,15 @@ def ask(db: Path, sha: str, query: str, k: int = 10, adapter=None,
     (Phase 14): causal claims then need H citations (V9) or inference kind.
     Requires repo_path (the checkout); without it, no history is attached.
     """
+    if AB.is_bulk_dump(query):
+        # T3: refuse before retrieval so no secret-adjacent evidence is
+        # attached to the response at all.
+        out = AB.abstention([], ["bulk-dump requests are refused: ask about "
+                                 "one mechanism at a time"], "bulk-dump refusal")
+        return {**out, "repairs": 0, "prompt_version": P.PROMPT_VERSION,
+                "model": CFG.LLM_MODEL, "provider": CFG.LLM_PROVIDER,
+                "fallback": False, "cloud_status": "local-only",
+                "evidence_tokens": 0}
     res = S.search(db, sha, query, k=k)
     gate = AB.pre_gate(res["confidence"],
                        bool(res["analysis"]["identifiers"]),
