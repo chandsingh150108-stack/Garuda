@@ -1,0 +1,532 @@
+{
+ "edges": [
+  {
+   "evidence": [
+    {
+     "chunk_id": "71fc81c63be17b52",
+     "lines": "1-67",
+     "path": "backend/tests/api/routes/test_items.py"
+    },
+    {
+     "chunk_id": "2dad6d14a0bf83e9",
+     "lines": "1-48",
+     "path": "backend/tests/api/routes/test_login.py"
+    },
+    {
+     "chunk_id": "f937b85f2d8a7ca3",
+     "lines": "1-26",
+     "path": "backend/tests/api/routes/test_private.py"
+    }
+   ],
+   "from": "N8",
+   "kind": "imports",
+   "to": "N7"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "2dad6d14a0bf83e9",
+     "lines": "1-48",
+     "path": "backend/tests/api/routes/test_login.py"
+    },
+    {
+     "chunk_id": "f937b85f2d8a7ca3",
+     "lines": "1-26",
+     "path": "backend/tests/api/routes/test_private.py"
+    },
+    {
+     "chunk_id": "ad55f62822abc060",
+     "lines": "1-59",
+     "path": "backend/tests/api/routes/test_users.py"
+    }
+   ],
+   "from": "N8",
+   "kind": "imports",
+   "to": "N3"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "fb81b45100bdad1b",
+     "lines": "1-57",
+     "path": "backend/app/api/deps.py"
+    },
+    {
+     "chunk_id": "044536f727631e52",
+     "lines": "1-60",
+     "path": "backend/app/api/routes/items.py"
+    },
+    {
+     "chunk_id": "7b479c7378614d87",
+     "lines": "1-52",
+     "path": "backend/app/api/routes/login.py"
+    }
+   ],
+   "from": "N2",
+   "kind": "imports",
+   "to": "N3"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "fb81b45100bdad1b",
+     "lines": "1-57",
+     "path": "backend/app/api/deps.py"
+    },
+    {
+     "chunk_id": "ae29ca901f74407c",
+     "lines": "1-14",
+     "path": "backend/app/api/main.py"
+    },
+    {
+     "chunk_id": "7b479c7378614d87",
+     "lines": "1-52",
+     "path": "backend/app/api/routes/login.py"
+    }
+   ],
+   "from": "N2",
+   "kind": "imports",
+   "to": "N7"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "7b479c7378614d87",
+     "lines": "1-52",
+     "path": "backend/app/api/routes/login.py"
+    },
+    {
+     "chunk_id": "ea2d61da86745a1b",
+     "lines": "1-53",
+     "path": "backend/app/api/routes/users.py"
+    },
+    {
+     "chunk_id": "727c2f0722e7d626",
+     "lines": "1-31",
+     "path": "backend/app/api/routes/utils.py"
+    }
+   ],
+   "from": "N2",
+   "kind": "imports",
+   "to": "N4"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "c920db8912cfd7c4",
+     "lines": "1-44",
+     "path": "backend/app/crud.py"
+    },
+    {
+     "chunk_id": "c2cc51513859d0f0",
+     "lines": "1-23",
+     "path": "backend/app/initial_data.py"
+    },
+    {
+     "chunk_id": "9b4280625dd5d49a",
+     "lines": "1-69",
+     "path": "backend/app/utils.py"
+    }
+   ],
+   "from": "N4",
+   "kind": "imports",
+   "to": "N7"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "9ad50779983eb572",
+     "lines": "7-58",
+     "path": "frontend/src/client/sdk.gen.ts"
+    },
+    {
+     "chunk_id": "5892d31c06c95a37",
+     "lines": "59-113",
+     "path": "frontend/src/client/sdk.gen.ts"
+    }
+   ],
+   "from": "N5",
+   "kind": "imports",
+   "to": "N2"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "dc3167e4e29aa2e6",
+     "lines": "1-33",
+     "path": "backend/app/core/db.py"
+    }
+   ],
+   "from": "N7",
+   "kind": "imports",
+   "to": "N3"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "dbfa5a40764f8aa7",
+     "lines": "1-36",
+     "path": "backend/app/main.py"
+    }
+   ],
+   "from": "N1",
+   "kind": "imports",
+   "to": "N2"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "dbfa5a40764f8aa7",
+     "lines": "1-36",
+     "path": "backend/app/main.py"
+    }
+   ],
+   "from": "N1",
+   "kind": "imports",
+   "to": "N7"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "051f6493ade6b27a",
+     "lines": "1-57",
+     "path": "backend/app/alembic/env.py"
+    }
+   ],
+   "from": "N3",
+   "kind": "imports",
+   "to": "N7"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "c920db8912cfd7c4",
+     "lines": "1-44",
+     "path": "backend/app/crud.py"
+    }
+   ],
+   "from": "N4",
+   "kind": "imports",
+   "to": "N3"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "3fd734649056b2bf",
+     "lines": "1-42",
+     "path": "backend/tests/conftest.py"
+    }
+   ],
+   "from": "N8",
+   "kind": "imports",
+   "to": "N1"
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "2dad6d14a0bf83e9",
+     "lines": "1-48",
+     "path": "backend/tests/api/routes/test_login.py"
+    }
+   ],
+   "from": "N8",
+   "kind": "imports",
+   "to": "N4"
+  }
+ ],
+ "nodes": [
+  {
+   "evidence": [
+    {
+     "chunk_id": "dbfa5a40764f8aa7",
+     "lines": "1-36",
+     "path": "backend/app/main.py"
+    }
+   ],
+   "id": "N1",
+   "kind": "entrypoint",
+   "label": "app entrypoint",
+   "paths": [
+    "backend/app/main.py"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "fb81b45100bdad1b",
+     "lines": "1-57",
+     "path": "backend/app/api/deps.py"
+    },
+    {
+     "chunk_id": "ae29ca901f74407c",
+     "lines": "1-14",
+     "path": "backend/app/api/main.py"
+    },
+    {
+     "chunk_id": "044536f727631e52",
+     "lines": "1-60",
+     "path": "backend/app/api/routes/items.py"
+    },
+    {
+     "chunk_id": "f27e7b7689f321b5",
+     "lines": "61-113",
+     "path": "backend/app/api/routes/items.py"
+    },
+    {
+     "chunk_id": "7b479c7378614d87",
+     "lines": "1-52",
+     "path": "backend/app/api/routes/login.py"
+    },
+    {
+     "chunk_id": "a9f27d7f52880349",
+     "lines": "53-99",
+     "path": "backend/app/api/routes/login.py"
+    },
+    {
+     "chunk_id": "08fe44ce4f770576",
+     "lines": "100-123",
+     "path": "backend/app/api/routes/login.py"
+    },
+    {
+     "chunk_id": "e97ca7c36d2af998",
+     "lines": "1-38",
+     "path": "backend/app/api/routes/private.py"
+    },
+    {
+     "chunk_id": "ea2d61da86745a1b",
+     "lines": "1-53",
+     "path": "backend/app/api/routes/users.py"
+    },
+    {
+     "chunk_id": "b5e3a2570a7cad07",
+     "lines": "54-102",
+     "path": "backend/app/api/routes/users.py"
+    },
+    {
+     "chunk_id": "138a6f18c9721ea1",
+     "lines": "103-161",
+     "path": "backend/app/api/routes/users.py"
+    },
+    {
+     "chunk_id": "727c2f0722e7d626",
+     "lines": "1-31",
+     "path": "backend/app/api/routes/utils.py"
+    }
+   ],
+   "id": "N2",
+   "kind": "api-layer",
+   "label": "API routes",
+   "paths": [
+    "backend/app/api/deps.py",
+    "backend/app/api/main.py",
+    "backend/app/api/routes/items.py",
+    "backend/app/api/routes/login.py",
+    "backend/app/api/routes/private.py",
+    "backend/app/api/routes/users.py",
+    "backend/app/api/routes/utils.py"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "df3fb0dde9fd97f4",
+     "lines": "1-69",
+     "path": "backend/app/models.py"
+    },
+    {
+     "chunk_id": "b3d437e71704e824",
+     "lines": "70-126",
+     "path": "backend/app/models.py"
+    }
+   ],
+   "id": "N3",
+   "kind": "model-layer",
+   "label": "DB models",
+   "paths": [
+    "backend/app/models.py"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "c920db8912cfd7c4",
+     "lines": "1-44",
+     "path": "backend/app/crud.py"
+    },
+    {
+     "chunk_id": "eb18b93203107cd9",
+     "lines": "45-68",
+     "path": "backend/app/crud.py"
+    }
+   ],
+   "id": "N4",
+   "kind": "service-layer",
+   "label": "CRUD services",
+   "paths": [
+    "backend/app/crud.py"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "b1762591af9d5bf4",
+     "lines": "1-16",
+     "path": "frontend/src/client/client.gen.ts"
+    },
+    {
+     "chunk_id": "8d5b21244aa1f976",
+     "lines": "1-69",
+     "path": "frontend/src/client/client/client.gen.ts"
+    },
+    {
+     "chunk_id": "f747bfd05b588f15",
+     "lines": "70-133",
+     "path": "frontend/src/client/client/client.gen.ts"
+    },
+    {
+     "chunk_id": "74df65b725309a0b",
+     "lines": "134-161",
+     "path": "frontend/src/client/client/client.gen.ts"
+    },
+    {
+     "chunk_id": "c2ad977302942b9a",
+     "lines": "1-23",
+     "path": "frontend/src/client/client/index.ts"
+    },
+    {
+     "chunk_id": "7e343220c9cdfabc",
+     "lines": "1-51",
+     "path": "frontend/src/client/client/types.gen.ts"
+    },
+    {
+     "chunk_id": "672495b9dac3057c",
+     "lines": "52-118",
+     "path": "frontend/src/client/client/types.gen.ts"
+    },
+    {
+     "chunk_id": "b00af56266291ba1",
+     "lines": "119-169",
+     "path": "frontend/src/client/client/types.gen.ts"
+    }
+   ],
+   "id": "N5",
+   "kind": "frontend",
+   "label": "React frontend",
+   "paths": [
+    "frontend/src/client/client.gen.ts",
+    "frontend/src/client/client/client.gen.ts",
+    "frontend/src/client/client/index.ts",
+    "frontend/src/client/client/types.gen.ts"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "ea0b471602650669",
+     "lines": "1-53",
+     "path": "compose.deploy.yml"
+    },
+    {
+     "chunk_id": "c35fd53f265a5899",
+     "lines": "1-79",
+     "path": "compose.override.yml"
+    },
+    {
+     "chunk_id": "51e00d205577940b",
+     "lines": "1-62",
+     "path": "compose.yml"
+    },
+    {
+     "chunk_id": "dc3167e4e29aa2e6",
+     "lines": "1-33",
+     "path": "backend/app/core/db.py"
+    }
+   ],
+   "id": "N6",
+   "kind": "external-database",
+   "label": "database (postgres:18)",
+   "paths": []
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "51e00d205577940b",
+     "lines": "1-62",
+     "path": "compose.yml"
+    },
+    {
+     "chunk_id": "e9ce71460c9c6f48",
+     "lines": "43-88",
+     "path": "compose.yml"
+    },
+    {
+     "chunk_id": "c35fd53f265a5899",
+     "lines": "1-79",
+     "path": "compose.override.yml"
+    },
+    {
+     "chunk_id": "9c140a88a481bdfd",
+     "lines": "60-100",
+     "path": "compose.override.yml"
+    },
+    {
+     "chunk_id": "ea0b471602650669",
+     "lines": "1-53",
+     "path": "compose.deploy.yml"
+    },
+    {
+     "chunk_id": "0b3d69d96c369d78",
+     "lines": "34-61",
+     "path": "compose.deploy.yml"
+    },
+    {
+     "chunk_id": "4063a39ca5bcdab0",
+     "lines": "1-67",
+     "path": "backend/app/core/config.py"
+    },
+    {
+     "chunk_id": "e2cbaa5e7c540d97",
+     "lines": "68-91",
+     "path": "backend/app/core/config.py"
+    }
+   ],
+   "id": "N7",
+   "kind": "configuration",
+   "label": "compose + settings",
+   "paths": [
+    "compose.yml",
+    "compose.override.yml",
+    "compose.deploy.yml",
+    "backend/app/core/config.py"
+   ]
+  },
+  {
+   "evidence": [
+    {
+     "chunk_id": "71fc81c63be17b52",
+     "lines": "1-67",
+     "path": "backend/tests/api/routes/test_items.py"
+    },
+    {
+     "chunk_id": "f26ac06fe08b9d4b",
+     "lines": "68-128",
+     "path": "backend/tests/api/routes/test_items.py"
+    },
+    {
+     "chunk_id": "3263246401edaed4",
+     "lines": "129-164",
+     "path": "backend/tests/api/routes/test_items.py"
+    }
+   ],
+   "id": "N8",
+   "kind": "test",
+   "label": "backend + frontend tests",
+   "paths": [
+    "backend/tests/__init__.py",
+    "backend/tests/api/__init__.py",
+    "backend/tests/api/routes/__init__.py",
+    "backend/tests/api/routes/test_items.py"
+   ]
+  }
+ ]
+}

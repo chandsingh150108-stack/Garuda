@@ -80,3 +80,34 @@ class IndexResponse(BaseModel):
     chunks: int
     symbols: int
     failed: list = Field(default_factory=list)
+
+
+class ArchEvidence(BaseModel):
+    chunk_id: str
+    path: str
+    lines: str
+
+
+class ArchNode(BaseModel):
+    id: str
+    kind: str
+    label: str
+    paths: list[str] = Field(default_factory=list)
+    evidence: list[ArchEvidence] = Field(default_factory=list)
+
+
+class ArchEdge(BaseModel):
+    model_from: str = Field(alias="from")
+    to: str
+    kind: str
+    evidence: list[ArchEvidence] = Field(default_factory=list)
+
+    model_config = {"populate_by_name": True}
+
+
+class ArchitectureResponse(BaseModel):
+    repo_id: str
+    sha: str
+    nodes: list[ArchNode] = Field(default_factory=list)
+    edges: list[ArchEdge] = Field(default_factory=list)
+    mermaid: str = ""

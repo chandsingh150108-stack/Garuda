@@ -635,3 +635,33 @@
 - Confidence: Medium (estimate-based accounting; headers would refine)
 - Fallback: Local inference (automatic).
 - Date: 2026-10-16
+
+## D12.1 Clustering
+- Status: LOCKED
+- Decision: Directory-based grouping (the repo's own packaging) refined by import density: groups are fixed directory rules; IMPORT edges between groups come from resolved import rows with chunk evidence. Heavier methods (ACDC dominator patterns, Bunch MQ search, WCA/LIMBO hierarchical, DSM ensembles) rejected for this repo: fully-automatic techniques lack precision alone, and fst's top-level dirs already name its layers.
+- Alternatives: Pure directory listing without edges (rejected: no flow information); Bunch-style optimization (rejected: unreadable tuning cost for 208 files).
+- Evidence: RESEARCH_LOG.md Phase 12 (recovery literature survey); `mentor/features/arch.py`; golden `tests/golden/arch_fst.json` (8 nodes / 14 edges, reviewed).
+- Reason: Simplest readable result; every group and edge traces to evidence.
+- Confidence: High
+- Fallback: Directory-only grouping (drop inter-component edges) per rollback rule.
+- Date: 2026-10-16
+
+## D12.2 Component kinds
+- Status: LOCKED
+- Decision: Kinds assigned by rule from actual fst paths: entrypoint=backend/app/main.py; api-layer=backend/app/api/**; model-layer=models.py + alembic/ (schema-adjacent); service-layer=crud.py + initial_data.py + utils.py; frontend=frontend/src/**; external-database=compose `db` service image (never code); configuration=compose.*.yml + core/**; test=backend/tests/** + frontend/tests/**.
+- Alternatives: Language-based grouping (rejected: splits the request flow); per-file nodes (rejected: 208 nodes unreadable).
+- Evidence: fst tree + index facts read 2026-10-16 (23 routes, User/Item tables, postgres:18, TanStack routes).
+- Reason: Rules mirror the reviewed layout, so the diagram cannot drift from the code it claims to show.
+- Confidence: High
+- Fallback: None (rules are data; new repos get their own recorded mapping).
+- Date: 2026-10-16
+
+## D12.3 Label source
+- Status: LOCKED
+- Decision: Labels generated from directory/symbol names by code. Optional LLM plain titles accepted ONLY if containing a ≥4-char word present in the node's cited evidence (`summaries.accept_title`); otherwise the deterministic label stands. Unknown node ids ignored.
+- Alternatives: Free LLM labels (rejected: failure condition — unevidenced titles); no LLM step (kept as fallback; currently optional/precompute).
+- Evidence: `tests/test_arch.py::test_title_validation_rejects_unevidenced`.
+- Reason: Readability upgrade without breaking the evidence chain.
+- Confidence: High
+- Fallback: Deterministic labels (always).
+- Date: 2026-10-16

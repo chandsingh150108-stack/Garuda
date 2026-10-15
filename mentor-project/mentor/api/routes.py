@@ -185,3 +185,20 @@ def repo_status(repo_id: str):
             "files": counts.get("files", 0),
             "chunks": counts.get("chunks", 0),
             "symbols": counts.get("symbols", 0)}
+
+
+@router.get("/repos/{repo_id}/architecture",
+            response_model=SC.ArchitectureResponse)
+def repo_architecture(repo_id: str):
+    from mentor.features import arch as A
+    from mentor.features import mermaid as M
+    repo = _repo(repo_id)
+    db = _index_db(repo)
+    model = A.extract(db, repo["sha"])
+    problems = M.check(M.render(model))
+    if problems:
+        raise HTTPException(status_code=500,
+                            detail=f"mermaid check failed: {problems}")
+    return {"repo_id": repo_id, "sha": repo["sha"],
+            "nodes": model["nodes"], "edges": model["edges"],
+            "mermaid": M.render(model)}

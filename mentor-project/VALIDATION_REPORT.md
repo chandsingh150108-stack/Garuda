@@ -52,3 +52,5 @@
 | 2026-10-16 | Phase 11 research | Groq docs + Gemini terms live reads | RECORDED with date | Groq free 30/1K/8K/200K per model (gpt-oss-120b/20b, qwen3.8-27b); Gemini unpaid trains products (terms eff. 2026-03-23); quotas re-verify demo week |
 | 2026-10-16 | Phase 11 unit | `pytest test_cloud_gating/redaction/budget/fallback -q` | PASS 17/17 | default-off zero egress, private + dirty-scan blocks, host pinning, canary redaction (counts-only), 90% budget stop + fail-closed, 429→local same contract, no-keys local |
 | 2026-10-16 | Phase 11 no-keys | full `pytest tests/ -q` with no GROQ/GEMINI keys | PASS 165 + 1 skip | cloud not a required dependency; kill-switch = allow_free_cloud=false (default) |
+| 2026-10-16 | Phase 12 extract | `python -m mentor.cli arch --index data/indexes/fst.sqlite` | 8 nodes / 14 edges, CHECK clean | entrypoint→API→CRUD→models + frontend→API chains present; every node/edge evidenced; golden reviewed vs code |
+| 2026-10-16 | Phase 12 unit | `pytest tests/test_arch.py tests/test_mermaid.py -q` | PASS 9/9 | coverage, golden match, key-flow edges, title rejection, escaping, endpoint model+links |

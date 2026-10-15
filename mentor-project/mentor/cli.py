@@ -141,6 +141,27 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_arch(args) -> int:
+    import json
+    from mentor.features import arch as A
+    from mentor.features import mermaid as M
+    model = A.extract(Path(args.index), args.sha)
+    if args.format == "json":
+        text = json.dumps(model, indent=1, sort_keys=True)
+    else:
+        text = M.render(model)
+        problems = M.check(text)
+        if problems:
+            print(f"MERMAID CHECK FAILED: {problems}")
+            return 1
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text, encoding="utf-8")
+    print(f"nodes={len(model['nodes'])} edges={len(model['edges'])}")
+    print(f"wrote {args.out}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -181,6 +202,11 @@ def main(argv: list[str] | None = None) -> int:
     srv.add_argument("--host", default="127.0.0.1")
     srv.add_argument("--port", type=int, default=8000)
     srv.add_argument("--unsafe-bind", action="store_true")
+    arc = sub.add_parser("arch", help="Deterministic architecture overview")
+    arc.add_argument("--index", default="data/indexes/fst.sqlite")
+    arc.add_argument("--sha", default=PINNED_SHA)
+    arc.add_argument("--out", default="data/cache/arch_fst.mmd")
+    arc.add_argument("--format", default="mmd", choices=["mmd", "json"])
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -198,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_ask(args)
     if args.command == "serve":
         return cmd_serve(args)
+    if args.command == "arch":
+        return cmd_arch(args)
     parser.error(f"unknown command {args.command}")
     return 2
 

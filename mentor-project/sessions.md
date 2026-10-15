@@ -128,3 +128,12 @@
 
 ### Next
 - Phase 12: architecture extraction and deterministic diagrams (component graph from imports/routes, Mermaid by construction).
+
+## 2026-10-16 — Phase 12 (architecture extraction) → GATE PASSED
+- Research: SAR survey (ACDC/Bunch/WCA/DSM ensembles; auto techniques insufficient alone) → directory groups + import edges (D12.1); Mermaid escaping rules → generated IDs + entity-code escaping + structural check().
+- Implemented `mentor/features/{arch,mermaid,summaries}.py`, `/architecture` endpoint, `mentor arch` CLI (+ `--format json` for the golden).
+- Bug found by measurement (own mapping gap): api/main.py+deps.py unmapped dropped the entrypoint→API edge; generalized rules (api/**, core/**, alembic→models, root helpers→services) restored it. Golden reviewed vs code: 8 nodes / 14 edges incl. N1→N2→N4→N3 + N5→N2 chains.
+- Suite 175/175. Commit `phase-12: architecture extraction`.
+
+### Next
+- Phase 13: guided tours (BFS flow traces with validated steps, precomputed).
