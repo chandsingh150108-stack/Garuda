@@ -778,7 +778,7 @@
 
 ## D16.1 Stack
 - Status: LOCKED
-- Decision: React 18.3.1 + TypeScript 5.7.2 + Vite 6.0.7 + Monaco 0.52.2 read-only + Mermaid 11.4.1 + plain CSS (no Tailwind). Pinned in `web/package.json`.
+- Decision: React 18.3.1 + TypeScript 5.7.2 + Vite 6.0.7 + Monaco 0.52.2 read-only + Mermaid 11.17.2 + plain CSS (no Tailwind). Pinned in `web/package.json` (amended Phase 18: 11.4.1→11.17.2).
 - Alternatives: Next.js (rejected: unnecessary SSR); CodeMirror (rejected: Monaco line-range story already built); Tailwind (rejected: extra dependency surface for a 6-page demo).
 - Evidence: `web/package.json`; RESEARCH_LOG.md Phase 16 (licences: React/MIT, Router/MIT, Vite/MIT, TS/Apache-2.0, Monaco/MIT, Mermaid/MIT, Vitest/MIT, Playwright/Apache-2.0).
 - Reason: Line ranges without server rendering; fewest moving parts for laptop demo.
@@ -996,25 +996,10 @@
 - Fallback: The recording (recovery table in DEMO_RUNBOOK.md).
 - Date: 2026-10-16
 
-## D21.1 Demo script
-- Status: LOCKED
-- Decision: `mentor demo` verifies index + demo cache FIRST (non-zero exit blocks a broken demo), prints the fixed Final-Demo-Runbook 15 steps with expected response kinds, opens `/ask` in the browser, then serves loopback. Step text changes require a recorded revision (this entry).
-- Alternatives: Manual click-through (rejected: unrepeatable, failure-prone under pressure).
-- Evidence: `mentor/demo.py::STEPS` (15, verbatim runbook order); `scripts/demo_check.py` 9/9.
-- Reason: The demo must be a program, not a performance.
-- Confidence: High
-- Fallback: Backup recording (D21.2).
-- Date: 2026-10-16
-
-## D21.2 Fallback
-- Status: LOCKED
-- Decision: Live local + labelled cache + honest abstain, in that order, always labelled. If the browser fails, the Playwright-recorded backup (`docs/demo_recording.md` location + SHA-256) plays. Cache-served answers always carry `cached: true`.
-- Alternatives: Faking live answers from cache without labels (rejected: dishonest, and a failure condition).
-- Evidence: `docs/demo_recording.md`; offline check 8/8 labelled.
-- Reason: Every fallback is visible to the audience.
-- Confidence: High
-- Fallback: The recording.
-- Date: 2026-10-16
+## D21.1/D21.2 Amendment (duplicate removed 2026-10-17)
+- Status: SUPERSEDED (dedupe note; canonical D21.1/D21.2 above stand)
+- Decision: The second copies of D21.1/D21.2 (`mentor demo` verify-first wording + labelled cache/recording fallback) were verbatim duplicates of the LOCKED entries above. Removed to keep one canonical record; behavior unchanged (`mentor/demo.py::STEPS`, `scripts/demo_check.py` 9/9, `docs/demo_recording.md`).
+- Date: 2026-10-17
 
 ## D22.1 Severity scale
 - Status: LOCKED

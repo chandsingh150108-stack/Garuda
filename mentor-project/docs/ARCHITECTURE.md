@@ -1,4 +1,4 @@
-# ARCHITECTURE (Phase 1 — matches DECISIONS A1-A18)
+# ARCHITECTURE (Phases 1–22 — matches DECISIONS A1-A18 + D16–D22)
 
 Product: verifiable repository onboarding (A1). Facts from deterministic index; language from model; trust from validator.
 
@@ -11,7 +11,7 @@ Git repo@SHA (untrusted) ─▶ INGEST (acquire→filters→secrets→manifest)
   ─▶ RETRIEVE (FTS5 BM25 identifier-split + symbol + path → RRF-60 → confidence signals; dense only if G1) [A5/A6]
   ─▶ EVIDENCE (E1..En server-numbered, line-numbered, ≤3000 tok) [A11]
   ─▶ GATEWAY (loopback-only local [A8/A17]; cloud branch Groq→Gemini→local behind D11.1 six-gate + redaction + 90% budget, default OFF [A10/D11])
-  ─▶ ANSWER LAYER p9v1 (evidence → contract → validator V1-V8 → 1 repair → answer|abstain; pre-gate τ_score=0.02) [A11/A12/D9.4]
+  ─▶ ANSWER LAYER p9v1 (evidence → contract → validator V1-V9 → 1 repair → answer|abstain; pre-gate τ_score=0.02; V9 causal-history rule Phase 14) [A11/A12/D9.4]
   ─▶ API (FastAPI 127.0.0.1 only) + WEB (React/Vite/Monaco-readonly/Mermaid/plain-text/CSP) [A15/A16]
      WEB detail (Phase 16, D16.1–D16.4): 6 pages (Repos/Ask/Code/Arch/Tours/Tasks) + chip/answer/statusbar;
      Ask shows provider (LOCAL/CLOUD/fallback) + abstain panel with missing list; chip links path+range+SHA
@@ -24,6 +24,11 @@ FEATURES: arch (deterministic Mermaid) [A13] · tours (BFS d≤3 fan≤8, resolv
 Data flow per question: ask → analyze → lexical/symbol/path + RRF → confidence gate (tau) → evidence → gateway (JSON schema) → validator → server-expand cites → provider label + SHA + audit (hashes).
 
 Freshness flow (Phase 17): working tree → `compute_changed` (git diff -M + dirty hashes) → `reindex` (delete + re-chunk + re-parse only touched paths, edges rebuilt, manifest/parses rewritten, `meta` dirty flags) → `/status` (head/dirty/changed) → UI stale badge on hash mismatch; tours regen lazily via `mentor tours precompute`.
+
+Controls added after Phase 17 (see DECISIONS D18–D22):
+- Phase 18 T3: `abstain.is_bulk_dump` refuses dump-all phrasing pre-retrieval (zero model calls); mechanism questions (e.g. password hashing) pass the guard.
+- Phase 19 modes + cache: `MENTOR_MODE` LOCAL (default) / LOCAL-OFFLINE (cloud vetoed) / CLOUD-PUBLIC-DEMO (flag + allowlist); `mentor precompute` warms 8/10 answers + arch/tours/tasks (q03/q09 abstain on retrieval floor, never faked); offline 8/8 labelled.
+- Phase 22 red team: 13 families run, worst=medium F11 residual (10/18 reach model, validator + abstention backstop), 0 critical; G3 NOT ADOPTED (file-P@10 0.05 vs 0.45–0.68 band); G4 NOT ADOPTED; F12 B6 1/20 both copies (no memorization); support 8/8.
 
 ## Gates
 - G1 embedding Phase 7 · G2 model Phase 8 · G3 agent Phase 22 · G4 reranker Phase 22. Procedures in DECISIONS.md.

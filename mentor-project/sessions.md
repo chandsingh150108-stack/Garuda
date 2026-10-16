@@ -162,3 +162,50 @@
 
 ### Next
 - Phase 16: web UI (React+Vite+Monaco+Mermaid, CSP, Playwright e2e).
+
+## 2026-10-16 — Phase 16 (web UI) → GATE PASSED
+- Stack D16.1–D16.4 LOCKED (React 18.3.1 + TS 5.7.2 + Vite 6.0.7 + Monaco 0.52.2 readonly + Mermaid + plain CSS; plain-text answers, provider labels, abstention-first-class).
+- Build `npm run build` PASS in 22.46s (4745 modules; CSP preserved; no inline scripts); `test_web_build.py` 3/3; vitest 5/5; Playwright 2/2 live (citation→exact lines @ SHA; 1280+400px no h-scroll; 2 spec fixes: exact locator, SHA-banner race).
+- Full suite 202 passed + 1 skip (`test_live_smoke_opt_in`). `web/dist/` + `web/test-results/` gitignored. Commit `phase-16: web interface`.
+
+### Next
+- Phase 17: incremental freshness (diff+dirty hashes, `reindex`, stale badge, lazy tour regen).
+
+## 2026-10-16 — Phase 17 (incremental freshness) → GATE PASSED
+- D17.1–D17.4 LOCKED (diff+dirty detection, dep-set invalidation + lazy regen, content-hash stale badge, `reindex` + opt-in hook).
+- `test_freshness.py` + `test_stale_citation.py` 9/9; scratch-file reindex 0.68s (<60s gate); Playwright stale-badge 3/3; `/status` backward-compatible. Commit `phase-17: incremental freshness`.
+
+### Next
+- Phase 18: security hardening (T1–T14, static tools, bulk-dump control).
+
+## 2026-10-16 — Phase 18 (security hardening) → GATE PASSED
+- D18.1–D18.3 LOCKED (T1–T14 authoritative + new T3 `is_bulk_dump` pre-retrieval refusal; Bandit/pip-audit/npm pins; 4 residuals).
+- T3: 6 dump phrasings refused zero model calls; 4 mechanism questions pass. `tests/security` 22/22; Bandit 0 High / 8 Med / 18 Low justified; pip-audit clean; npm 12→4 (mermaid 11.4.1→11.17.2, react-router 6.28.0→6.30.6). Commit `phase-18: security hardening`.
+
+### Next
+- Phase 19: offline mode + demo cache (`MENTOR_MODE`, precompute, offline proof).
+
+## 2026-10-16 — Phase 19 (offline mode + demo cache) → GATE PASSED
+- D19.1–D19.3 LOCKED (LOCAL / LOCAL-OFFLINE veto / CLOUD-PUBLIC-DEMO; scripted offline proof; precompute + install).
+- `test_offline.py` + `test_no_keys.py` 7/7; `precompute --install` 8 cached / 2 abstained (q03/q09 retrieval floor); `offline_check.py` 8/8 cached, 0 non-loopback. Commit `phase-19: offline mode and demo cache`.
+
+### Next
+- Phase 20: user study pre-registration (deferred n=0).
+
+## 2026-10-16 — Phase 20 (user study) → DEFERRED n=0, PRE-REGISTERED
+- D20.1–D20.5 LOCKED (crossover, n=8–12 large-effects-only, metrics, Wilcoxon+bootstrap, privacy); protocol SHA-256 `2ddbe2…` frozen pre-data.
+- `test_study_analysis.py` 4/4 synthetic. No pool in this environment; Phase 21 proceeds on explicit deferral. Commit `phase-20: user study`.
+
+### Next
+- Phase 21: demo engineering (fixed script, verify-first, recording).
+
+## 2026-10-16 — Phase 21 (demo engineering) → GATE PASSED
+- D21.1–D21.2 LOCKED (fixed 15-step script + verify-first; live→cache→abstain→recording fallback order).
+- `demo_check.py` 9/9 ×3; Playwright video 3.3s (~37KB, SHA `fbf628d8…` in `docs/demo_recording.md`); `DEMO_RUNBOOK.md` complete. Commit `phase-21: demo engineering`.
+
+### Next
+- Phase 22: red team (13 families, G3/G4, contamination, support).
+
+## 2026-10-17 — Phase 22 (red team) → GATE PASSED, PROJECT COMPLETE
+- D22.1 + G3 + G4 + D22.2/D22.3 LOCKED (severity scale; G3 NOT ADOPTED file-P@10 0.05 vs 0.45–0.68 band; G4 NOT ADOPTED; contamination/support/tau).
+- `run_all.py` worst=medium (F11 8/18 gated residual) critical_open=0; F12 B6 1/20 both copies (no memorization); support 8/8; `tests/security` 29/29 (22+7 regression pins). Commit `phase-22: red team complete` (`59ef23a`).
