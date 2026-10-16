@@ -135,6 +135,7 @@ def cmd_eval_answers(args) -> int:
 
 def cmd_serve(args) -> int:
     import uvicorn
+    from mentor import config as CFG
     from mentor.api import app as APP
     from mentor.api import routes as R
     APP.resolve_bind(args.host, args.unsafe_bind)
@@ -142,6 +143,7 @@ def cmd_serve(args) -> int:
                          "sha": args.sha, "index": args.index}
     print(f"serving fst@{args.sha[:12]} on http://{args.host}:{args.port} "
           f"(index {args.index})")
+    print(CFG.mode_banner())
     uvicorn.run(APP.create_app(), host=args.host, port=args.port, log_level="info")
     return 0
 
@@ -263,6 +265,27 @@ def cmd_reindex(args) -> int:
     return 0
 
 
+def cmd_precompute(args) -> int:
+    """Warm the demo cache with local inference (spec Phase 19, D19.3)."""
+    from mentor.answer import qa as QA
+    from mentor.features import precompute as PC
+    adapter = QA.default_adapter()
+    summary = PC.run(Path(args.index), args.sha, args.repo_id,
+                     Path(args.out), tours_dir=Path(args.tours),
+                     adapter=adapter, limit=args.limit)
+    print(f"arch nodes={summary['arch']['nodes']} "
+          f"edges={summary['arch']['edges']}")
+    print(f"tours={summary['tours']}")
+    print(f"tasks={summary['tasks']}")
+    print(f"cached answers={summary['questions']} "
+          f"abstained={summary['abstained']}")
+    if args.install:
+        copied = PC.install(Path(args.out), args.repo_id, Path(args.cache))
+        print(f"installed into {args.cache}: {', '.join(copied)}")
+    print(f"wrote {args.out}/precompute_manifest.json")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="mentor", description="Codebase Mentor")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -337,6 +360,17 @@ def main(argv: list[str] | None = None) -> int:
     rdx.add_argument("--sha", default=PINNED_SHA)
     rdx.add_argument("--cache", default="data/cache")
     rdx.add_argument("--timeout", type=float, default=10.0)
+    pre = sub.add_parser("precompute", help="Warm the demo cache (local only)")
+    pre.add_argument("--index", default="data/indexes/fst.sqlite")
+    pre.add_argument("--sha", default=PINNED_SHA)
+    pre.add_argument("--repo", default="data/repos/fst")
+    pre.add_argument("--repo-id", default="fst")
+    pre.add_argument("--out", default="data/demo_cache")
+    pre.add_argument("--tours", default="evals/tours")
+    pre.add_argument("--cache", default="data/cache")
+    pre.add_argument("--limit", type=int, default=10)
+    pre.add_argument("--install", action="store_true",
+                     help="copy tour JSONs into the serving cache dir")
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -350,6 +384,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.parses is None:
             args.parses = f"data/parses/{args.sha}.json"
         return cmd_reindex(args)
+    if args.command == "precompute":
+        return cmd_precompute(args)
     if args.command == "search":
         return cmd_search(args)
     if args.command == "eval" and args.what == "retrieval":

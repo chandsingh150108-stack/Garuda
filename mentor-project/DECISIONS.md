@@ -885,3 +885,33 @@
 - Confidence: Medium (exposure analysis is judgment, stated as such).
 - Fallback: Upgrade when majors mature; re-audit demo week.
 - Date: 2026-10-16
+
+## D19.1 Modes
+- Status: LOCKED
+- Decision: `MENTOR_MODE` selects LOCAL (default, loopback, cloud iff `ALLOW_FREE_CLOUD=true`), LOCAL-OFFLINE (loopback; cloud vetoed even if the flag is set; `gh` lookup stays off), or CLOUD-PUBLIC-DEMO (still requires the flag + allowlisted public repo; never required). Unknown values fail safe to LOCAL. `mentor serve` prints `mode_banner()` at startup.
+- Alternatives: Flag-only control (rejected: one boolean cannot express offline-vs-armed); network-required mode (rejected: no such mode exists).
+- Evidence: `mentor/config.py::active_mode/cloud_enabled/mode_banner`; `tests/test_offline.py` mode + veto tests.
+- Reason: The venue network may not exist; the binary must behave identically with and without it.
+- Confidence: High
+- Fallback: LOCAL (always).
+- Date: 2026-10-16
+
+## D19.2 Isolation method
+- Status: LOCKED
+- Decision: Offline proof = `scripts/offline_check.py` (enforcing loopback-only SocketGuard around the full in-process demo: status/arch/tours/tasks + all cached demo answers). It proves zero non-loopback ATTEMPTS in-process — not OS-level isolation (guard cannot see subprocesses or pre-opened handles; stated in the script + residual 4). Venue proof remains physical: unplug and rerun.
+- Alternatives: Firewall rule / adapter disable (rejected as the recorded method: not scriptable in CI, but named as the stronger venue option); claiming the guard proves isolation (rejected: dishonest).
+- Evidence: `python scripts/offline_check.py` → 8/8 cached, 0 non-loopback (this machine, recorded below).
+- Reason: A repeatable scripted check beats a one-time unplug nobody can re-verify.
+- Confidence: High (for what it claims); limits stated, not hidden.
+- Fallback: Physical unplug + same script.
+- Date: 2026-10-16
+
+## D19.3 Demo cache
+- Status: LOCKED
+- Decision: `mentor precompute --out data/demo_cache [--install]` builds arch (8 nodes/14 edges) + 3 narrated tours + 10 tasks + validated answers to the 10 demo questions (8 cached, q03/q09 abstain on the retrieval floor — served live as abstentions, never faked). Answers warm the index answer-cache under serve-path keys (labelled `cached`); `--install` copies tour JSONs into `data/cache` for the file-backed endpoints. Cache dir is git-ignored runtime, shipped as a separate archive.
+- Alternatives: Live-inference demo (rejected: venue network/GPU risk); faked warm answers (rejected: validator + cache rules forbid storing unvalidated content).
+- Evidence: `data/demo_cache/precompute_manifest.json`; offline check 8/8 labelled.
+- Reason: The demo must survive dead wifi and a cold model server.
+- Confidence: High
+- Fallback: Regenerate (`mentor precompute`); cache misses fall back to live inference with honest labels.
+- Date: 2026-10-16

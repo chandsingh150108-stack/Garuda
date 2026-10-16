@@ -67,7 +67,7 @@ def _serve_with_cloud(db: Path, sha: str, query: str, blocks: list[dict],
         limits = getattr(CFG, f"{provider.upper()}_LIMITS", {})
         ok, why = BU.allowed(Path(CFG.CLOUD_BUDGET_DB), provider, limits)
         allowed, gate_why = GW.check_cloud_allowed(
-            allow_free_cloud=CFG.ALLOW_FREE_CLOUD,
+            allow_free_cloud=CFG.cloud_enabled(),
             allowlisted_public=allowlisted_public,
             scan_clean=RD.manifest_scan_clean(sha), redacted=True,
             within_cap=tokens <= CFG.CLOUD_MAX_TOKENS,

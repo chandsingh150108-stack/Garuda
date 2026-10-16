@@ -3,9 +3,39 @@
 Zero-cost rule: every default here must be free/open. No paid dependency.
 Cloud is default-off; see A10.
 """
+import os
 
 ALLOW_FREE_CLOUD = False
 INDEX_SCHEMA_VERSION = 2
+
+# Phase 19 serving modes (D19.1): LOCAL (default) and LOCAL-OFFLINE (no
+# network required; all optional lookups disabled) never need the network;
+# CLOUD-PUBLIC-DEMO additionally requires ALLOW_FREE_CLOUD=true and is only
+# ever valid for allowlisted public repositories. Never required.
+MODES = ("LOCAL", "LOCAL-OFFLINE", "CLOUD-PUBLIC-DEMO")
+
+
+def active_mode() -> str:
+    """Serving mode from MENTOR_MODE (fail-safe: unknown values -> LOCAL)."""
+    mode = os.environ.get("MENTOR_MODE", "LOCAL").upper().replace("_", "-")
+    return mode if mode in MODES else "LOCAL"
+
+
+def cloud_enabled() -> bool:
+    """Whether any cloud call may happen. Offline mode vetoes unconditionally."""
+    if active_mode() == "LOCAL-OFFLINE":
+        return False
+    return bool(ALLOW_FREE_CLOUD)
+
+
+def mode_banner() -> str:
+    mode = active_mode()
+    if mode == "LOCAL-OFFLINE":
+        return "mode=LOCAL-OFFLINE (loopback only; cloud + gh lookup disabled)"
+    if mode == "CLOUD-PUBLIC-DEMO":
+        state = "armed" if ALLOW_FREE_CLOUD else "requested but ALLOW_FREE_CLOUD=false"
+        return f"mode=CLOUD-PUBLIC-DEMO ({state}; public repos only)"
+    return "mode=LOCAL (loopback only; cloud disabled by default)"
 
 # Phase 11 free-cloud (D11, default OFF). Model names are NEVER hardcoded:
 # they are chosen from the provider's live model list at demo time

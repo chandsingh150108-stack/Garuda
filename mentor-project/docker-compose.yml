@@ -1,0 +1,50 @@
+# Optional Docker path (Phase 19, D19.3). The NATIVE path (venv + local
+# llama-server + `mentor serve`) remains the default and the only tested
+# demo path. This file exists for Linux/Docker users who want the model
+# service on an internal network with no published model port.
+#
+# Usage (untested on the Windows laptop; Linux only):
+#   docker compose up --build
+# Then open http://127.0.0.1:8000 (served through the api service only).
+
+services:
+  model:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    command: >
+      -m /models/Qwen3-4B-Q4_K_M.gguf -c 8192 --parallel 1
+      --host 0.0.0.0 --port 8080
+    volumes:
+      - ./data/models:/models:ro
+    networks:
+      - internal
+    # No ports published: the model is reachable only inside `internal`.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  api:
+    image: python:3.12-slim
+    working_dir: /app
+    command: >
+      sh -c "pip install -r requirements.txt && python -m mentor.cli serve
+      --host 0.0.0.0 --port 8000 --unsafe-bind"
+    volumes:
+      - .:/app:ro
+      - ./data:/app/data
+    environment:
+      LLM_ENDPOINT: http://model:8080
+      MENTOR_MODE: LOCAL
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - internal
+    depends_on:
+      - model
+
+networks:
+  internal:
+    internal: true

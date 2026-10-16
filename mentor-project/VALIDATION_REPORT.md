@@ -88,3 +88,8 @@
 | 2026-10-16 | Phase 18 bandit | `bandit -r mentor -q` (1.9.4, 5993 LOC) | 0 High / 8 Med / 18 Low, all justified | Med = B608 `?`-placeholder IN-lists + B310 egress-guarded urlopen; Lows = argv-list subprocess, seeded eval shuffle, internal asserts, documented fail-open defaults |
 | 2026-10-16 | Phase 18 pip-audit | `pip_audit` (2.10.1) | CLEAN | No known vulnerabilities in pinned dependencies |
 | 2026-10-16 | Phase 18 npm audit | `npm audit --omit=dev` before/after minors | 12→4 (0 high left) | Upgraded react-router-dom 6.28.0→6.30.6 + mermaid 11.4.1→11.17.2 (exact pins); rebuilt 42 s + vitest 5/5 + build gate re-verified; 4 remaining need breaking majors → residuals 1–2 |
+| 2026-10-16 | Phase 19 research | Isolation method + cache-warming rule | CONFIRMED | Guard proves attempts-not-isolation (stated); one cache path, one `cached` label; 8/10 cache (q03/q09 retrieval floor, never faked) |
+| 2026-10-16 | Phase 19 decisions | D19.1–D19.3 recorded | DONE | LOCAL/LOCAL-OFFLINE/CLOUD-PUBLIC-DEMO + veto; scripted offline proof + limits; precompute + install |
+| 2026-10-16 | Phase 19 unit | `pytest tests/test_offline.py tests/test_no_keys.py -q` | PASS 7/7 | Modes + offline veto + cached-labelled serve with zero egress + guard semantics; no-keys gate + local fallback |
+| 2026-10-16 | Phase 19 precompute | `mentor precompute --install` (live 4B, loopback) | 8 cached / 2 abstained | arch 8n/14e + 3 tours + 10 tasks + 8 validated answers warmed under serve-path keys; q03/q09 abstain (pre-gate, documented floor); tours installed to `data/cache` |
+| 2026-10-16 | Phase 19 offline | `python scripts/offline_check.py` | PASS 8/8 cached, 0 non-loopback | Status/arch/tours/tasks + all demo answers served cache-labelled under enforcing guard |

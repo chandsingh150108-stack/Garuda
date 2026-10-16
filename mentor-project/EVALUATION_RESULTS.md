@@ -121,3 +121,16 @@ Scripted scratch-file edit (`demo_live_edit_scratch.py`, untracked) + `FR.reinde
 | added 1 file | 1 file | 1 file / 1 chunk / symbols | 0.68 s | PASS |
 
 Command pattern: `python -m mentor.cli reindex --repo data/repos/fst --index <IDX> --manifest <M> --parses <P>`. Full-suite re-verification in `tests/test_freshness.py::test_reindex_primary_repo_under_60s` (same setup, asserts elapsed < 60).
+
+## Phase 19 demo cache (2026-10-16, local 4B via loopback)
+
+`mentor precompute --install` (manifest: `data/demo_cache/precompute_manifest.json`, git-ignored):
+
+| Artifact | Result |
+|---|---|
+| arch | 8 nodes / 14 edges, mermaid check clean |
+| tours | signup / login / crud, all ≥3 validated steps, installed to `data/cache` |
+| tasks | 10 ranked + validated |
+| answers | 8/10 validated + cache-warmed (q01 q04 q05 q10 q12 q15 q16 q17); q03 + q09 abstain pre-gate (retrieval floor, §Phase 6) |
+
+Offline serving: `scripts/offline_check.py` → 8/8 demo answers cache-labelled, 0 non-loopback attempts under enforcing guard.
