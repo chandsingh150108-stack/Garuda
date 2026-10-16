@@ -349,6 +349,16 @@
 - Fallback: Revert call-sites to `run_isolated`; delete the pool.
 - Date: 2026-10-17
 
+## perf-05 gate: plan pruning NOT ADOPTED
+- Status: LOCKED
+- Decision: Keep full-tree chunk plans. Measured plan cost via pool (0.10–0.52s even on the 215KB file) is linear and small; pruning would save ~5% while risking `chunk_id` drift on oversized units (line-split fallback), which would invalidate caches, tour dep-hashes, and audit trails.
+- Alternatives: Top-level-only plans with on-demand child fetch (rejected: complexity + identity risk for ~1 min on sklearn scale).
+- Evidence: EVALUATION_RESULTS.md perf-05 gate (numbers above).
+- Reason: Measured, not argued — the two binding costs (deadlock, spawn tax) are already gone.
+- Confidence: High
+- Fallback: Revisit only with new evidence + SUPERSEDED entry.
+- Date: 2026-10-17
+
 ## D5.1 Query analysis
 - Status: LOCKED
 - Decision: Extract backticked identifiers, CamelCase/snake_case word tokens, route-like paths (`/seg/seg`), and file-like tokens (`name.ext`); keep the original query string for display and Phase 7 dense use. Identifier splitting reuses Phase 4 `split_identifier` for FTS matching.

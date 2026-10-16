@@ -227,3 +227,7 @@ Tau re-check: TAU_SCORE=0.02 / TAU_COV=0.0 stand; pre-gate abstains still cluste
 | Pickled result sizes, all 1045 parses | 11 failures 64–119KB; 1034 passes ≤63KB; zero overlap — ~64KB pipe-buffer cliff |
 
 Reading: `run_isolated` (`mentor/parse/parse_worker.py:29-44`) joins-then-reads; results above the pipe buffer deadlock the feeder because the parent never drains during `join` (it only `get_nowait`s after). No finite timeout escapes; the `"timeout"` label is a misdiagnosis. Same landmine under `chunker.plan_file`. Spawn tax (~0.3s/spawn, ~1,800 spawns for sklearn) is the dominant total-time term.
+
+## perf-05 gate: plan pruning NOT ADOPTED (measured 2026-10-17)
+
+`plan_file` via the persistent pool on sklearn's biggest files: estimator_checks.py (215KB) 0.52s, _classification.py 0.10s, _data.py 0.13s, _forest.py 0.11s. Full-tree plan build + pickle + transfer is linear and small next to the (now removed) spawn tax. Pruning to top-level-only plans would save ~0.05s typical / ~0.4s worst-case per file while risking chunk-identity drift on oversized units (line-split fallback changes `chunk_id`s, invalidating caches/tours/audit). Rejected: ~5% gain cannot justify identity risk. The deadlock fix + worker reuse already removed the two binding costs.
