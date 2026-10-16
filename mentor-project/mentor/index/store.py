@@ -2,9 +2,10 @@
 
 Builds one SQLite file per repository from the Phase 2 manifest and Phase 3
 parses: files, symbols, imports, edges, routes, models, config facts, chunks
-(with FTS5 rows). One transaction per file. Parameterized queries only —
-repository content is untrusted. No wall-clock values are stored, so two
-builds of identical input are byte-comparable.
+(with FTS5 rows). File rows commit in batches (default 50; fewer fsyncs on
+large repos). Parameterized queries only — repository content is untrusted.
+No wall-clock values are stored, so two builds of identical input are
+byte-comparable.
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ import json
 import sqlite3
 import sys
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 from mentor.index import chunker as K
@@ -70,9 +72,18 @@ def _jdump(value) -> str:
     return json.dumps(value, sort_keys=True)
 
 
+COMMIT_EVERY_FILES = 50
+
+
 def build(repo_root: Path, manifest_path: Path, parses_path: Path, out: Path,
-          repo_id: str = "fst", timeout_s: float = 10.0) -> dict:
-    """Build the index. Returns stats {files, chunks, symbols, failed}."""
+          repo_id: str = "fst", timeout_s: float = 10.0,
+          commit_every: int = COMMIT_EVERY_FILES) -> dict:
+    """Build the index. Returns stats {files, chunks, symbols, failed}.
+
+    File rows commit in batches of `commit_every` (default 50) instead of
+    once per file: identical SQL and row content, far fewer fsyncs on large
+    repos. `commit_every=1` reproduces the legacy per-file behavior exactly.
+    """
     root = repo_root.resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     parses = json.loads(parses_path.read_text(encoding="utf-8"))
@@ -89,9 +100,12 @@ def build(repo_root: Path, manifest_path: Path, parses_path: Path, out: Path,
         indexed = [e for e in manifest["files"] if e.get("skipped") is None]
         total = len(indexed)
         t0 = time.monotonic()
+        batch = max(1, int(commit_every))
         for i, entry in enumerate(sorted(indexed, key=lambda e: e["path"]), start=1):
             _index_file(con, root, sha, entry, parsed_files.get(entry["path"]),
-                        timeout_s, stats)
+                        timeout_s, stats, _commit=False)
+            if i == total or i % batch == 0:
+                con.commit()
             if i == total or i % 50 == 0:
                 dt = time.monotonic() - t0
                 print(f"index {i}/{total} files={stats['files']} "
@@ -106,7 +120,9 @@ def build(repo_root: Path, manifest_path: Path, parses_path: Path, out: Path,
 
 
 def _index_file(con: sqlite3.Connection, root: Path, sha: str, entry: dict,
-                parsed: dict | None, timeout_s: float, stats: dict):
+                parsed: dict | None, timeout_s: float, stats: dict,
+                _commit: bool = True):
+    txn = con if _commit else nullcontext()
     rel = entry["path"]
     suffix = Path(rel).suffix.lower()
     language = {".py": "python", ".ts": "typescript", ".tsx": "tsx",
@@ -116,7 +132,7 @@ def _index_file(con: sqlite3.Connection, root: Path, sha: str, entry: dict,
     res = K.chunk_file(root, rel, symbols, timeout_s, force_lines=failed_parse)
     if res.get("status") != "ok":
         stats["failed"].append({"path": rel, "reason": res.get("reason")})
-        with con:
+        with txn:
             con.execute(
                 "INSERT INTO files(snapshot_sha, path, size, sha256, language, skipped)"
                 " VALUES (?, ?, ?, ?, ?, 'chunk_failed')",
@@ -124,7 +140,7 @@ def _index_file(con: sqlite3.Connection, root: Path, sha: str, entry: dict,
         return
     chunks = K.assemble(sha, rel, res["spans"], symbols, res["lines"])
     parsed = parsed or {}
-    with con:  # one transaction per file
+    with txn:  # batched by the caller (see build: commit_every)
         con.execute(
             "INSERT INTO files(snapshot_sha, path, size, sha256, language, skipped)"
             " VALUES (?, ?, ?, ?, ?, NULL)",

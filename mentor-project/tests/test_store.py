@@ -82,6 +82,37 @@ def test_build_progress_goes_to_stderr(tmp_path: Path, capsys):
     assert captured.out == ""
 
 
+def _inputs_for(tmp_path: Path):
+    repo = _repo_for(tmp_path, "cb.sqlite")
+    repo.mkdir()
+    _tiny_repo(repo)
+    manifest = M.build_manifest(repo, "testsha")
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    files = {}
+    for entry in manifest["files"]:
+        if entry.get("skipped") is not None:
+            continue
+        p = repo / entry["path"]
+        if p.suffix == ".py":
+            files[entry["path"]] = P.extract_py(p, p.read_bytes(), repo)
+    parses = {"sha": "testsha", "files": files, "routes": [], "models": [],
+              "include_routers": [], "edges": {"imports": [], "calls": []},
+              "config": {"compose": {}, "pyproject": {}, "package_json": {}}}
+    (tmp_path / "parses.json").write_text(json.dumps(parses), encoding="utf-8")
+    return repo
+
+
+def test_batched_commits_match_per_file_commits(tmp_path: Path):
+    repo = _inputs_for(tmp_path)
+    a = tmp_path / "cb1.sqlite"
+    b = tmp_path / "cb50.sqlite"
+    S.build(repo, tmp_path / "manifest.json", tmp_path / "parses.json", a,
+            repo_id="t", commit_every=1)
+    S.build(repo, tmp_path / "manifest.json", tmp_path / "parses.json", b,
+            repo_id="t", commit_every=50)
+    assert S.dump_rows(a) == S.dump_rows(b)
+
+
 def test_failed_parse_takes_line_window_fast_path(tmp_path: Path):
     repo = _repo_for(tmp_path, "ff.sqlite")
     repo.mkdir()
