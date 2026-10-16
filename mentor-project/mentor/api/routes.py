@@ -8,6 +8,7 @@ model server; production uses the configured (Phase 8 G2) adapter.
 """
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -297,6 +298,7 @@ def get_tour(repo_id: str, name: str):
 @router.get("/repos/{repo_id}/tasks", response_model=SC.TasksResponse)
 def list_tasks(repo_id: str, limit: int = Query(default=10, ge=1, le=50)):
     from mentor.features import tasks as TS
+    from mentor.features import task_polish as TP
     repo = _repo(repo_id)
     db = _index_db(repo)
     tasks = TS.rank(TS.link_tours(
@@ -306,4 +308,12 @@ def list_tasks(repo_id: str, limit: int = Query(default=10, ge=1, le=50)):
     if problems:
         raise HTTPException(status_code=500,
                             detail=f"task validation failed: {problems}")
+    polished_file = TP.polished_path(Path("data/cache"), repo_id)
+    if polished_file.is_file():
+        try:
+            polished = json.loads(polished_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            polished = []
+        if isinstance(polished, list):
+            tasks = TP.overlay_polish(tasks, polished, db, repo["sha"])
     return {"repo_id": repo_id, "sha": repo["sha"], "tasks": tasks}

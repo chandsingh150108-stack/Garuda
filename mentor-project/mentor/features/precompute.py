@@ -34,7 +34,7 @@ DEMO_QUESTIONS: list[tuple[str, str, int]] = [
 def run(index: Path, sha: str, repo_id: str, out_dir: Path,
         tours_dir: Path = Path("evals/tours"),
         adapter=None, questions: list[tuple[str, str, int]] | None = None,
-        limit: int = 10) -> dict:
+        limit: int = 10, polish_tasks: bool = False) -> dict:
     """Build every artifact. Returns a summary (also written as manifest)."""
     from mentor.answer import cache as CA
     from mentor.answer import prompts as P
@@ -78,9 +78,15 @@ def run(index: Path, sha: str, repo_id: str, out_dir: Path,
     problems = TS.validate(index, sha, tasks, tours_dir)
     if problems:
         raise ValueError(f"task validation failed: {problems}")
+    polished = 0
+    if polish_tasks and CFG.ALLOW_TASK_POLISH and adapter is not None:
+        from mentor.features import task_polish as TP
+        tasks = TP.polish_tasks(index, sha, tasks, adapter, limit)
+        polished = sum(1 for t in tasks if "polished" in t)
     (out_dir / f"tasks_{repo_id}.json").write_text(
         json.dumps(tasks, indent=1), encoding="utf-8")
     summary["tasks"] = len(tasks)
+    summary["tasks_polished"] = polished
     for qid, question, k in questions:
         res = QA.ask(index, sha, question, k=k, adapter=adapter)
         key = CA.make_key(repo_id, sha, question, CFG.LLM_PROVIDER,
@@ -106,4 +112,17 @@ def install(out_dir: Path, repo_id: str, cache_dir: Path) -> list[str]:
         dest = cache_dir / path.name
         dest.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
         copied.append(dest.name)
+    tasks_file = out_dir / f"tasks_{repo_id}.json"
+    if tasks_file.is_file():
+        try:
+            keep = any(isinstance(t, dict) and "polished" in t
+                       for t in json.loads(tasks_file.read_text(
+                           encoding="utf-8")))
+        except (OSError, ValueError):
+            keep = False
+        if keep:
+            dest = cache_dir / tasks_file.name
+            dest.write_text(tasks_file.read_text(encoding="utf-8"),
+                            encoding="utf-8")
+            copied.append(dest.name)
     return copied

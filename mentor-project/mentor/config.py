@@ -7,6 +7,10 @@ import os
 
 ALLOW_FREE_CLOUD = False
 INDEX_SCHEMA_VERSION = 2
+# Task LLM polish (tasks refresh Phase 3, default OFF): precompute may spend
+# local inference polishing task blurbs; serving overlays them only on
+# id + evidence-hash match, else deterministic text. Never required.
+ALLOW_TASK_POLISH = False
 
 # Phase 19 serving modes (D19.1): LOCAL (default) and LOCAL-OFFLINE (no
 # network required; all optional lookups disabled) never need the network;

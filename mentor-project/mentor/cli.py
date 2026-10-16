@@ -272,11 +272,13 @@ def cmd_precompute(args) -> int:
     adapter = QA.default_adapter()
     summary = PC.run(Path(args.index), args.sha, args.repo_id,
                      Path(args.out), tours_dir=Path(args.tours),
-                     adapter=adapter, limit=args.limit)
+                     adapter=adapter, limit=args.limit,
+                     polish_tasks=args.polish_tasks)
     print(f"arch nodes={summary['arch']['nodes']} "
           f"edges={summary['arch']['edges']}")
     print(f"tours={summary['tours']}")
-    print(f"tasks={summary['tasks']}")
+    print(f"tasks={summary['tasks']} "
+          f"polished={summary.get('tasks_polished', 0)}")
     print(f"cached answers={summary['questions']} "
           f"abstained={summary['abstained']}")
     if args.install:
@@ -371,6 +373,9 @@ def main(argv: list[str] | None = None) -> int:
     pre.add_argument("--limit", type=int, default=10)
     pre.add_argument("--install", action="store_true",
                      help="copy tour JSONs into the serving cache dir")
+    pre.add_argument("--polish-tasks", action="store_true",
+                     help="polish task blurbs with local inference "
+                     "(needs ALLOW_TASK_POLISH=true; deterministic fallback)")
     dem = sub.add_parser("demo", help="Verify + open + serve the demo")
     dem.add_argument("--index", default="data/indexes/fst.sqlite")
     dem.add_argument("--repo", default="data/repos/fst")

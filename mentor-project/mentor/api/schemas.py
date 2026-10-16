@@ -190,6 +190,7 @@ class TaskItem(BaseModel):
     verify: str = ""
     example_test: str | None = None
     open_first: TaskOpenFirst | None = None
+    polished: bool = False
 
 
 class TasksResponse(BaseModel):
