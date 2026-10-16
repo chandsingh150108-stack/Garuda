@@ -211,8 +211,13 @@ def cmd_tours(args) -> int:
 
 def cmd_tasks(args) -> int:
     from mentor.features import tasks as TS
+    if args.bandit_scan:
+        stored = TS.store_bandit_scan(Path(args.index), Path(args.repo),
+                                      args.sha)
+        print(f"bandit findings stored: {stored}")
     tasks = TS.rank(TS.link_tours(
-        TS.collect(Path(args.index), args.sha), Path(args.tours),
+        TS.collect(Path(args.index), args.sha,
+                   gh_repo=args.gh_repo), Path(args.tours),
         Path(args.cache)), args.limit)
     problems = TS.validate(Path(args.index), args.sha, tasks, Path(args.tours))
     if problems:
@@ -351,9 +356,16 @@ def main(argv: list[str] | None = None) -> int:
     tsk = sub.add_parser("tasks", help="Starter tasks for newcomers")
     tsk.add_argument("--index", default="data/indexes/fst.sqlite")
     tsk.add_argument("--sha", default=PINNED_SHA)
+    tsk.add_argument("--repo", default="data/repos/fst")
     tsk.add_argument("--tours", default="evals/tours")
     tsk.add_argument("--cache", default="data/cache")
     tsk.add_argument("--limit", type=int, default=10)
+    tsk.add_argument("--bandit-scan", action="store_true",
+                     help="run Bandit over --repo and store findings in "
+                     "the index before listing")
+    tsk.add_argument("--gh-repo", default=None,
+                     help="fetch good-first-issue/help-wanted items for "
+                     "OWNER/REPO (needs ALLOW_GH_TASKS=true, never offline)")
     rdx = sub.add_parser("reindex", help="Refresh only changed index rows")
     rdx.add_argument("--repo", default="data/repos/fst")
     rdx.add_argument("--index", default="data/indexes/fst.sqlite")

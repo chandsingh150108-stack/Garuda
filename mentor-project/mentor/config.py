@@ -11,6 +11,11 @@ INDEX_SCHEMA_VERSION = 2
 # local inference polishing task blurbs; serving overlays them only on
 # id + evidence-hash match, else deterministic text. Never required.
 ALLOW_TASK_POLISH = False
+# Upstream GitHub issues as task sources (tasks refresh Phase 4, default
+# OFF): `gh` CLI lookups for good-first-issue/help-wanted labels. Live
+# network fetch, fail-open to offline signals. Never required, and never in
+# LOCAL-OFFLINE mode.
+ALLOW_GH_TASKS = False
 
 # Phase 19 serving modes (D19.1): LOCAL (default) and LOCAL-OFFLINE (no
 # network required; all optional lookups disabled) never need the network;

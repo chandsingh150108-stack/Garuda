@@ -65,6 +65,104 @@ def test_collect_fires_all_applicable_kinds_on_second_repo():
     assert "missing-tests" in kinds or "missing-docstring" in kinds
 
 
+def test_bandit_mapping_filters_and_ranks():
+    import sqlite3 as _sq
+    con = _sq.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        findings = [
+            {"test_id": "B105", "severity": "LOW",
+             "path": "backend/app/core/config.py", "line": 61,
+             "issue_text": "Possible hardcoded password"},
+            {"test_id": "B101", "severity": "LOW",
+             "path": "backend/tests/test_x.py", "line": 5,
+             "issue_text": "assert used"},
+            {"test_id": "B101", "severity": "LOW",
+             "path": "frontend/src/client/sdk.gen.ts", "line": 9,
+             "issue_text": "generated"},
+            {"test_id": "B999", "severity": "HIGH",
+             "path": "backend/app/core/security.py", "line": 35,
+             "issue_text": "contrived high"},
+            {"test_id": "B000", "severity": "LOW",
+             "path": "nowhere/nothing.py", "line": 3,
+             "issue_text": "no chunks"},
+        ]
+        tasks = TS._bandit_tasks_from_findings(con, SHA, findings, {})
+        by_id = {t["id"]: t for t in tasks}
+        assert len(tasks) == 2, [t["id"] for t in tasks]
+        assert by_id["security-learn-config-config-61"]["evidence"]
+        high = by_id["security-learn-security-security-35"]
+        assert high["high_risk"] is True
+        ranked = TS.rank(tasks, 10)
+        assert ranked[-1]["id"] == high["id"]  # sinks, still listed
+        assert TS.validate(DB, SHA, ranked, Path("evals/tours")) == []
+    finally:
+        con.close()
+
+
+def test_bandit_scan_round_trip_on_scratch_copy(tmp_path: Path):
+    import shutil
+    db = tmp_path / "bandit.sqlite"
+    shutil.copy(DB, db)
+    n = TS.store_bandit_scan(db, Path("data/repos/fst"), SHA)
+    assert n > 0
+    assert TS.read_bandit_scan(db, SHA) != []
+    assert TS.read_bandit_scan(db, "deadbeef") == []
+    tasks = TS.collect(db, SHA)
+    assert any(t["kind"] == "security-learn" for t in tasks)
+    assert TS.validate(db, SHA, TS.rank(tasks, 50),
+                       Path("evals/tours")) == []
+
+
+def test_gh_mapping_links_evidence_and_gates():
+    import sqlite3 as _sq
+    from mentor import config as CFG
+    con = _sq.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        issues = [{"number": 4242,
+                   "title": "register_user signup flow follow-up",
+                   "body": "Please polish the signup handler.",
+                   "url": "https://example.invalid/i/4242",
+                   "labels": ["good first issue"]},
+                  {"number": 4243, "title": "zzzz-no-such-code-qqq",
+                   "body": "", "url": "https://example.invalid/i/4243",
+                   "labels": ["help wanted"]}]
+        tasks = TS._github_tasks_from_issues(DB, SHA, issues, {})
+        by_id = {t["id"]: t for t in tasks}
+        assert "good-first-issue-4242" in by_id
+        task = by_id["good-first-issue-4242"]
+        assert task["title"].startswith("#4242:")
+        assert task["evidence"] and task["acceptance"] and task["verify"]
+        assert TS.validate(DB, SHA, tasks, Path("evals/tours")) == []
+    finally:
+        con.close()
+
+
+def test_gh_issue_without_indexed_evidence_is_skipped(monkeypatch):
+    from mentor.retrieve import search as SR
+    monkeypatch.setattr(SR, "search", lambda *a, **k: {"hits": []})
+    issues = [{"number": 1, "title": "anything", "body": "",
+               "url": "https://example.invalid/i/1", "labels": []}]
+    assert TS._github_tasks_from_issues(DB, SHA, issues, {}) == []
+
+
+def test_gh_gates_default_off_and_offline(monkeypatch):
+    from mentor import config as CFG
+    assert CFG.ALLOW_GH_TASKS is False
+    assert TS.collect(DB, SHA, gh_repo="owner/repo") == TS.collect(DB, SHA)
+    monkeypatch.setattr(CFG, "ALLOW_GH_TASKS", True)
+    monkeypatch.setenv("MENTOR_MODE", "LOCAL-OFFLINE")
+    try:
+        assert TS.collect(DB, SHA, gh_repo="owner/repo") == TS.collect(DB, SHA)
+    finally:
+        monkeypatch.delenv("MENTOR_MODE")
+
+
+def test_fetch_gh_issues_without_binary_is_empty(monkeypatch):
+    import shutil as _sh
+    monkeypatch.setattr(_sh, "which", lambda *a, **k: None)
+    assert TS.fetch_gh_issues("owner/repo") == []
+
+
 def test_high_risk_excluded_from_top_five():
     tasks = [{"id": f"t{i}", "difficulty": float(i), "risk": 0,
               "high_risk": False} for i in range(7)]

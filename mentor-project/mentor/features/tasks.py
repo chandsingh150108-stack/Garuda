@@ -3,7 +3,10 @@
 Signals (D15.1, offline): TODO/FIXME/HACK markers; public functions with no
 test references AND no dedicated test file; route handlers without an
 explicit response_model; public functions without docstrings (low weight —
-crud-wide absence shows it is stylistic here, not a task per file).
+crud-wide absence shows it is stylistic here, not a task per file);
+Bandit findings in source paths (stored as an index artifact, served when
+present); GitHub good-first-issue/help-wanted items (opt-in live fetch,
+evidence-linked to retrieval hits).
 
 Scoring (D15.2/D15.3, weights in config = engineering judgment, calibrated
 in evals/tasks_calibration.md):
@@ -22,7 +25,10 @@ from __future__ import annotations
 import json
 import math
 import re
+import shutil
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -180,6 +186,8 @@ def _nearest_test_dir(con, sha: str, own_path: str, cache: dict) -> str | None:
 def verify_command(kind: str, name: str, test_file: str | None) -> str:
     """A checkable command for the task. Always syntactically runnable;
     `-k` filtering keeps it scoped when no dedicated file exists."""
+    if kind == "security-learn" and test_file is not None:
+        return f"bandit {test_file} -q"
     if test_file is not None:
         if kind == "missing-tests":
             return f"pytest {test_file} -q -k {name}"
@@ -206,6 +214,14 @@ def acceptance_for(kind: str, name: str, file: str, start: int, end: int,
         return [f"Handler `{name}` ({where}) declares an explicit response_model",
                 "Existing route tests still pass unmodified",
                 f"Verify: `{verify}`"]
+    if kind == "security-learn":
+        return [f"Finding at {where} triaged as real or false-positive",
+                "Fix merged, or the false-positive reason recorded next to it",
+                f"Verify: `{verify}`"]
+    if kind == "good-first-issue":
+        return ["Scope reproduced in this checkout before changing code",
+                "PR references the upstream issue number",
+                f"Verify: `{verify}`"]
     return [f"`{name}` ({where}) documents inputs, outputs, and errors",
             "Docstring style matches sibling functions in the file",
             f"Verify: `{verify}`"]
@@ -223,11 +239,30 @@ def _line_count(con, sha: str, path: str) -> int:
     return row[0] if row else 0
 
 
-def collect(db: Path, sha: str) -> list[dict]:
-    """All candidate tasks with evidence + scores (unsorted)."""
+def collect(db: Path, sha: str, gh_repo: str | None = None) -> list[dict]:
+    """All candidate tasks with evidence + scores (unsorted).
+
+    Offline signals always run. Stored Bandit findings append when an
+    artifact exists for this sha (populate via `tasks --bandit-scan` or
+    `store_bandit_scan`; serving never scans). Upstream GitHub issues append
+    only when `gh_repo` is given AND the `ALLOW_GH_TASKS` flag is on AND the
+    mode is not LOCAL-OFFLINE; any fetch failure yields nothing.
+    """
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
-        return _collect(con, sha)
+        tasks = _collect(con, sha)
+        test_cache: dict = {}
+        bandit_findings = read_bandit_scan(db, sha)
+        if bandit_findings:
+            tasks.extend(_bandit_tasks_from_findings(
+                con, sha, bandit_findings, test_cache))
+        if (gh_repo and CFG.ALLOW_GH_TASKS
+                and CFG.active_mode() != "LOCAL-OFFLINE"):
+            issues = fetch_gh_issues(gh_repo)
+            if issues:
+                tasks.extend(_github_tasks_from_issues(
+                    db, sha, issues, test_cache))
+        return tasks
     finally:
         con.close()
 
@@ -357,14 +392,15 @@ def _collect(con, sha: str) -> list[dict]:
 
 def _task(con, sha: str, *, kind: str, file: str, start: int, end: int,
           symbol: str | None, evidence: list[dict], detail: str,
-          test_cache: dict | None = None) -> dict:
+          test_cache: dict | None = None, risk_bonus: int = 0) -> dict:
     lines = max(1, end - start + 1)
     name = (symbol or Path(file).stem).split(".")[-1]
     fi = fan_in(con, sha, name, file)
     difficulty = round(CFG.TASK_W1 * math.log(lines) + CFG.TASK_W2 * 1 +
                        CFG.TASK_W3 * fi["total"], 3)
     blob = f"{file} {name}".lower()
-    risk = fi["total"] + sum(5 for kw in RISK_KEYWORDS if kw in blob)
+    risk = fi["total"] + sum(5 for kw in RISK_KEYWORDS if kw in blob) \
+        + risk_bonus
     prereqs = prerequisites(con, sha, file)
     title, description = deterministic_title(kind, name, file)
     cache = test_cache if test_cache is not None else {}
@@ -419,13 +455,229 @@ def deterministic_title(kind: str, name: str, file: str) -> tuple[str, str]:
         return (f"Declare a response model for `{name}`",
                 f"Handler `{name}` in {file} returns unvalidated output. "
                 "Declare an explicit response_model like its sibling routes.")
+    if kind == "security-learn":
+        return (f"Review Bandit finding in {short}",
+                f"Static analysis flagged {file}. Confirm whether the finding "
+                "is reachable; fix it or record a false-positive reason.")
+    if kind == "good-first-issue":
+        return (f"Contribute: {name[:80]}",
+                f"Upstream issue proposing newcomer work. Read the linked "
+                "discussion, reproduce the scope in this checkout, and open "
+                "a PR that references the issue number.")
     return (f"Document `{name}`",
             f"`{name}` in {file} has no docstring. Add one describing "
             "inputs, outputs, and errors.")
 
 
+BANDIT_SEVERITY_BONUS = {"LOW": 0, "MEDIUM": 3, "HIGH": 8}
+BANDIT_MAX_TASKS = 12
+GH_MAX_TASKS = 10
+GH_LABELS = ("good first issue", "help wanted")
+
+
+def run_bandit(repo_root: Path, timeout_s: float = 120.0) -> list[dict]:
+    """Run Bandit (pinned dev tool) over a checkout. Returns normalized
+    findings; [] on ANY failure (missing binary, timeout, bad output) so a
+    scan can never break task mining. argv-list only, never a shell."""
+    if shutil.which("bandit") is None and not _bandit_importable():
+        return []
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "bandit", "-r", str(repo_root),
+             "-f", "json", "-q"],
+            capture_output=True, text=True, timeout=timeout_s, shell=False)
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return []
+    try:
+        doc = json.loads(proc.stdout or "{}")
+    except ValueError:
+        return []
+    findings = []
+    for item in doc.get("results", []):
+        try:
+            rel = str(Path(item["filename"]).resolve().relative_to(
+                Path(repo_root).resolve())).replace("\\", "/")
+        except (KeyError, OSError, ValueError):
+            continue
+        findings.append({
+            "test_id": str(item.get("test_id", "?")),
+            "severity": str(item.get("issue_severity", "LOW")).upper(),
+            "path": rel,
+            "line": int(item.get("line_number") or 0),
+            "issue_text": str(item.get("issue_text", ""))[:200],
+        })
+    return findings
+
+
+def _bandit_importable() -> bool:
+    try:
+        import bandit  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def store_bandit_scan(db: Path, repo_root: Path, sha: str) -> int:
+    """Run Bandit and store findings as an index artifact (kind=bandit,
+    key=sha). Returns the stored count. Re-indexing drops the artifact
+    (re-run the scan); serving only ever READS it."""
+    findings = run_bandit(repo_root)
+    con = sqlite3.connect(str(db))
+    try:
+        con.execute("INSERT OR REPLACE INTO artifacts(kind, key, content_json,"
+                    " dep_hash, created_sha) VALUES ('bandit', ?, ?, ?, ?)",
+                    (sha, json.dumps(findings, sort_keys=True), sha, sha))
+        con.commit()
+        return len(findings)
+    finally:
+        con.close()
+
+
+def read_bandit_scan(db: Path, sha: str) -> list[dict]:
+    """Findings stored for this sha, else []. Never scans."""
+    try:
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return []
+    try:
+        row = con.execute("SELECT content_json FROM artifacts"
+                          " WHERE kind = 'bandit' AND key = ?",
+                          (sha,)).fetchone()
+        if row is None:
+            return []
+        doc = json.loads(row[0])
+        return doc if isinstance(doc, list) else []
+    except (sqlite3.Error, ValueError):
+        return []
+    finally:
+        con.close()
+
+
+def _bandit_tasks_from_findings(con, sha: str, findings: list[dict],
+                                test_cache: dict) -> list[dict]:
+    """Map normalized findings to tasks. Source paths only (test files and
+    generated code never yield tasks); LOW first (easy wins), cap applied."""
+    order = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
+    picked = []
+    for item in sorted(findings,
+                       key=lambda f: (order.get(f.get("severity", "LOW"), 0),
+                                      f.get("path", ""), f.get("line", 0))):
+        path, line = item.get("path", ""), item.get("line", 0)
+        if not path or line <= 0 or not _is_source_path(path):
+            continue
+        if _excluded(path):
+            continue
+        rows = con.execute(
+            "SELECT chunk_id, start_line, end_line FROM chunks"
+            " WHERE snapshot_sha = ? AND path = ?"
+            " AND NOT (end_line < ? OR start_line > ?)"
+            " ORDER BY start_line LIMIT 2",
+            (sha, path, line, line)).fetchall()
+        if not rows:
+            continue
+        picked.append((item, rows))
+        if len(picked) >= BANDIT_MAX_TASKS:
+            break
+    tasks = []
+    for item, rows in picked:
+        sev = item.get("severity", "LOW")
+        tasks.append(_task(
+            con, sha, kind="security-learn", file=item["path"],
+            start=item["line"], end=item["line"], symbol=None,
+            evidence=[{"chunk_id": c, "path": item["path"],
+                       "lines": f"{s}-{e}"} for c, s, e in rows],
+            detail=f"Bandit {item.get('test_id', '?')} [{sev}]: "
+                   f"{item.get('issue_text', '')}",
+            test_cache=test_cache,
+            risk_bonus=BANDIT_SEVERITY_BONUS.get(sev, 0)))
+    return tasks
+
+
+def fetch_gh_issues(gh_repo: str, timeout_s: float = 30.0) -> list[dict]:
+    """Open good-first-issue/help-wanted items via the `gh` CLI. [] on ANY
+    failure (missing binary, no network, bad repo, timeout, bad JSON): the
+    offline path never depends on it. argv-list only, never a shell."""
+    if shutil.which("gh") is None:
+        return []
+    seen: dict[int, dict] = {}
+    for label in GH_LABELS:
+        try:
+            proc = subprocess.run(
+                ["gh", "issue", "list", "--repo", gh_repo, "--label", label,
+                 "--state", "open", "--json",
+                 "number,title,body,url,labels", "--limit", "20"],
+                capture_output=True, text=True, timeout=timeout_s, shell=False)
+        except (OSError, subprocess.TimeoutExpired, ValueError):
+            continue
+        if proc.returncode != 0:
+            continue
+        try:
+            items = json.loads(proc.stdout or "[]")
+        except ValueError:
+            continue
+        for item in items:
+            try:
+                number = int(item["number"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            seen.setdefault(number, {
+                "number": number,
+                "title": str(item.get("title", ""))[:120],
+                "body": str(item.get("body", ""))[:500],
+                "url": str(item.get("url", "")),
+                "labels": sorted(str(l.get("name", ""))
+                                 for l in item.get("labels", [])
+                                 if isinstance(l, dict)),
+            })
+    return [seen[n] for n in sorted(seen)][:GH_MAX_TASKS]
+
+
+def _github_tasks_from_issues(db: Path, sha: str, issues: list[dict],
+                              test_cache: dict) -> list[dict]:
+    """Map upstream issues to evidence-linked tasks. Evidence is the top-2
+    retrieval hits for title+labels (heuristic start-here code, honestly
+    labelled as such); issues with no indexed evidence are skipped, never
+    emitted uncited. Titles/bodies are untrusted upstream text: rendered as
+    plain text in the UI, never fed to the model, length-capped."""
+    from mentor.retrieve import search as SR
+    tasks = []
+    con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    try:
+        for issue in issues:
+            try:
+                res = SR.search(db, sha,
+                                f"{issue['title']} {' '.join(issue['labels'])}",
+                                k=3)
+            except (OSError, sqlite3.Error, ValueError):
+                continue
+            hits = res.get("hits", [])[:2]
+            if not hits:
+                continue
+            top = hits[0]
+            task = _task(
+                con, sha, kind="good-first-issue", file=top["path"],
+                start=top["start_line"], end=top["end_line"], symbol=None,
+                evidence=[{"chunk_id": h["chunk_id"], "path": h["path"],
+                           "lines": f"{h['start_line']}-{h['end_line']}"}
+                          for h in hits],
+                detail=f"Upstream issue #{issue['number']}: {issue['url']} "
+                       f"(labels: {', '.join(issue['labels']) or 'none'}). "
+                       f"Excerpt: {issue['body'][:200]}",
+                test_cache=test_cache)
+            task["id"] = f"good-first-issue-{issue['number']}"
+            task["title"] = f"#{issue['number']}: {issue['title'][:100]}"
+            task["description"] = (
+                f"Upstream issue proposing newcomer work ({issue['url']}). "
+                "Read the linked discussion, reproduce the scope in this "
+                "checkout, and open a PR that references the issue number.")
+            tasks.append(task)
+    finally:
+        con.close()
+    return tasks
+
+
 def link_tours(tasks: list[dict], tours_dir: Path,
-               cache_dir: Path | None = None) -> list[dict]:
+                cache_dir: Path | None = None) -> list[dict]:
     """Attach read-first tour links: tours whose steps touch the task file
     (from precomputed cache when present, else seed files from definitions).
     Unknown files get no link rather than a wrong one."""
@@ -479,8 +731,8 @@ def validate(db: Path, sha: str, tasks: list[dict],
                     problems.append(f"{task['id']}: open_first missing "
                                     f"{first.get('path')}")
             verify = task.get("verify", "")
-            if verify.startswith("pytest "):
-                parts = verify[len("pytest "):].split()
+            if verify.startswith("pytest ") or verify.startswith("bandit "):
+                parts = verify.split(" ", 1)[1].split()
                 vpath = parts[0] if parts and not parts[0].startswith("-") else ""
                 if vpath and vpath not in known_files:
                     problems.append(f"{task['id']}: verify target missing {vpath}")

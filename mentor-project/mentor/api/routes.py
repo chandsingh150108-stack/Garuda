@@ -296,13 +296,14 @@ def get_tour(repo_id: str, name: str):
 
 
 @router.get("/repos/{repo_id}/tasks", response_model=SC.TasksResponse)
-def list_tasks(repo_id: str, limit: int = Query(default=10, ge=1, le=50)):
+def list_tasks(repo_id: str, limit: int = Query(default=10, ge=1, le=50),
+               gh_repo: str | None = Query(default=None)):
     from mentor.features import tasks as TS
     from mentor.features import task_polish as TP
     repo = _repo(repo_id)
     db = _index_db(repo)
     tasks = TS.rank(TS.link_tours(
-        TS.collect(db, repo["sha"]), Path("evals/tours"),
+        TS.collect(db, repo["sha"], gh_repo=gh_repo), Path("evals/tours"),
         Path("data/cache")), limit)
     problems = TS.validate(db, repo["sha"], tasks, Path("evals/tours"))
     if problems:
