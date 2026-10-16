@@ -30,6 +30,41 @@ def test_no_task_without_evidence_and_ranges_exist():
         assert 1 <= task["start"] <= task["end"]
 
 
+def test_source_test_split_is_layout_agnostic():
+    src = ["backend/app/crud.py", "sklearn/ensemble/_forest.py",
+           "frontend/src/api/client.ts", "pkg/util.js", "src/lib/index.tsx"]
+    for p in src:
+        assert TS._is_source_path(p), p
+    tst = ["backend/tests/test_crud.py", "sklearn/ensemble/tests/test_forest.py",
+           "frontend/tests/user.spec.ts", "test_main.py", "tests/utils/utils.py",
+           "sklearn/tests/test_common.py", "foo.test.js", "bar.spec.ts"]
+    for p in tst:
+        assert TS._is_test_path(p), p
+        assert not TS._is_source_path(p), p
+    assert not TS._is_source_path("sklearn/ensemble/_forest.pyx")
+    assert not TS._is_source_path("doc/whats_new.rst")
+
+
+def test_exclusions_match_segments_not_roots():
+    assert TS._excluded("backend/app/alembic/env.py")
+    assert TS._excluded("db/migrations/001_init.py")
+    assert TS._excluded("frontend/src/client/sdk.gen.ts")
+    assert TS._excluded("static/bundle.min.js")
+    assert not TS._excluded("backend/app/crud.py")
+    assert not TS._excluded("sklearn/ensemble/_forest.py")
+
+
+def test_collect_fires_all_applicable_kinds_on_second_repo():
+    import pytest as _pytest
+    db = Path("data/indexes/sklearn.sqlite")
+    if not db.is_file():
+        _pytest.skip("probe artifact absent: index sklearn@85593ca first")
+    kinds = {t["kind"] for t in TS.collect(
+        db, "85593ca7a07a9956ac891f6bfc3fedca53b74f72")}
+    assert "todo" in kinds
+    assert "missing-tests" in kinds or "missing-docstring" in kinds
+
+
 def test_high_risk_excluded_from_top_five():
     tasks = [{"id": f"t{i}", "difficulty": float(i), "risk": 0,
               "high_risk": False} for i in range(7)]

@@ -32,13 +32,30 @@ from mentor import config as CFG
 # Generated or append-only code never yields tasks: migrations are history
 # (testing a downgrade per file is expert work, not a starter task) and
 # generated clients are build artifacts. Recorded exclusion, not silence.
+# Prefixes are matched as path SEGMENTS (not repo-rooted literals) so the
+# rule travels across repositories.
 TODO_RE = re.compile(r"\b(TODO|FIXME|HACK)\b")
-EXCLUDED_PREFIXES = ("backend/app/alembic/",)
-EXCLUDED_SUFFIXES = (".gen.ts",)
+EXCLUDED_SEGMENTS = ("alembic", "migrations", "migrate")
+EXCLUDED_SUFFIXES = (".gen.ts", ".min.js")
+# Source files eligible for symbol-based signals (test/spec files excluded
+# separately by _is_test_path). Mirrors the ingest code extensions.
+SOURCE_SUFFIXES = (".py", ".ts", ".tsx", ".js", ".jsx")
+TEST_PATH_RE = re.compile(r"(^|/)(test_|tests?/|test\.|.*[._-](spec|test)\.)",
+                           re.IGNORECASE)
 
 
 def _excluded(path: str) -> bool:
-    return path.startswith(EXCLUDED_PREFIXES) or path.endswith(EXCLUDED_SUFFIXES)
+    segments = path.split("/")
+    return (any(s in EXCLUDED_SEGMENTS for s in segments)
+            or path.endswith(EXCLUDED_SUFFIXES))
+
+
+def _is_test_path(path: str) -> bool:
+    return TEST_PATH_RE.search(path) is not None
+
+
+def _is_source_path(path: str) -> bool:
+    return path.endswith(SOURCE_SUFFIXES) and not _is_test_path(path)
 RISK_KEYWORDS = ("auth", "password", "migration", "security", "payment")
 
 
@@ -141,12 +158,15 @@ def _collect(con, sha: str) -> list[dict]:
                     detail=f"{len(marks)} marker(s): {sorted(set(marks))}"))
 
     # 2. Public functions without tests and without a dedicated test file.
+    # Source/test split is index-derived (suffix + test-path rules), never a
+    # hardcoded repo layout, so this fires on any repository.
     for qualname, name, path, start, end, kind in con.execute(
             "SELECT qualname, name, path, start_line, end_line, kind"
             " FROM symbols WHERE snapshot_sha = ? AND kind IN"
-            " ('function', 'method') AND path LIKE 'backend/app/%'"
-            " AND path NOT LIKE '%test%'", (sha,)):
+            " ('function', 'method')", (sha,)):
         if name.startswith("_") or name in ("main",):
+            continue
+        if not _is_source_path(path):
             continue
         if _excluded(path):
             continue
@@ -201,10 +221,11 @@ def _collect(con, sha: str) -> list[dict]:
     for qualname, name, path, start, end in con.execute(
             "SELECT qualname, name, path, start_line, end_line FROM symbols"
             " WHERE snapshot_sha = ? AND kind IN ('function', 'method')"
-            " AND (docstring IS NULL OR docstring = '')"
-            " AND path LIKE 'backend/app/%' AND path NOT LIKE '%test%'",
+            " AND (docstring IS NULL OR docstring = '')",
             (sha,)):
         if name.startswith("_"):
+            continue
+        if not _is_source_path(path):
             continue
         if _excluded(path):
             continue
