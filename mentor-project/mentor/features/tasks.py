@@ -91,20 +91,124 @@ def fan_in(con, sha: str, name: str, path: str) -> dict:
             "total": callers + len(importers)}
 
 
+def _test_files(con, sha: str) -> list[str]:
+    """All indexed test/spec paths, sorted for determinism."""
+    return sorted(r[0] for r in con.execute(
+        "SELECT path FROM files WHERE snapshot_sha = ?"
+        " AND (path LIKE '%test%' OR path LIKE '%spec%')", (sha,)))
+
+
 def dedicated_test_exists(con, sha: str, path: str) -> bool:
     """A test file exists FOR this source file: test_<stem>.py,
     <stem>.spec.*, or <stem>.test.*. A helper merely named like the stem
     (tests/utils/utils.py) does not count."""
+    return _dedicated_test_path(con, sha, path) is not None
+
+
+def _dedicated_test_path(con, sha: str, path: str) -> str | None:
     stem = Path(path).stem.lstrip("_").lower()
-    rows = con.execute("SELECT path FROM files WHERE snapshot_sha = ?"
-                       " AND (path LIKE '%test%' OR path LIKE '%spec%')",
-                       (sha,)).fetchall()
-    for (tpath,) in rows:
+    for tpath in _test_files(con, sha):
         base = Path(tpath).name.lower()
         if base in (f"test_{stem}.py", f"test{stem}.py") or \
            base.startswith(stem + ".spec.") or base.startswith(stem + ".test."):
-            return True
-    return False
+            return tpath
+    return None
+
+
+def _test_blobs(con, sha: str, cache: dict) -> dict[str, str]:
+    """Joined text per test file, built ONCE per collect (not per task)."""
+    if "blobs" not in cache:
+        blobs: dict[str, str] = {}
+        for tpath in _test_files(con, sha):
+            blobs[tpath] = "\n".join(r[0] for r in con.execute(
+                "SELECT text FROM chunks WHERE snapshot_sha = ? AND path = ?",
+                (sha, tpath)))
+        cache["blobs"] = blobs
+    return cache["blobs"]
+
+
+def nearest_test_file(con, sha: str, name: str | None, own_path: str,
+                      cache: dict) -> str | None:
+    """Nearest test file for a task: the dedicated file for its source, else
+    the test file referencing the symbol name most (ties: shortest path,
+    then lexical — deterministic). Test texts are read once per collect;
+    per-name counting is cached. `None` only when the index holds no test
+    files at all."""
+    key = ("dedicated", own_path)
+    if key not in cache:
+        cache[key] = _dedicated_test_path(con, sha, own_path)
+    if cache[key] is not None:
+        return cache[key]
+    if not name:
+        return _nearest_test_dir(con, sha, own_path, cache)
+    key = ("refs", name)
+    if key not in cache:
+        best: str | None = None
+        best_hits = 0
+        for tpath, blob in _test_blobs(con, sha, cache).items():
+            hits = blob.count(name)
+            if hits > best_hits or (hits == best_hits and hits > 0 and
+                                    (best is None or (len(tpath), tpath) <
+                                     (len(best), best))):
+                best, best_hits = tpath, hits
+        cache[key] = best
+    if cache[key] is not None:
+        return cache[key]
+    return _nearest_test_dir(con, sha, own_path, cache)
+
+
+def _nearest_test_dir(con, sha: str, own_path: str, cache: dict) -> str | None:
+    """Closest test file by directory proximity (same dir first, then
+    ancestors), deterministic. Last resort before giving up."""
+    key = ("dir", own_path)
+    if key not in cache:
+        tests = _test_files(con, sha)
+        cands: list[tuple[int, str]] = []
+        own_dir = str(Path(own_path).parent).replace("\\", "/")
+        for tpath in tests:
+            tdir = str(Path(tpath).parent).replace("\\", "/")
+            if tdir == own_dir:
+                cands.append((0, tpath))
+            elif own_dir.startswith(tdir + "/") or tdir.startswith(own_dir + "/"):
+                depth = abs(len(tdir.split("/")) - len(own_dir.split("/")))
+                cands.append((1 + depth, tpath))
+        cands.sort()
+        cache[key] = cands[0][1] if cands else None
+    return cache[key]
+
+
+def verify_command(kind: str, name: str, test_file: str | None) -> str:
+    """A checkable command for the task. Always syntactically runnable;
+    `-k` filtering keeps it scoped when no dedicated file exists."""
+    if test_file is not None:
+        if kind == "missing-tests":
+            return f"pytest {test_file} -q -k {name}"
+        return f"pytest {test_file} -q"
+    if name:
+        return f"pytest -q -k {name}"
+    return "pytest -q"
+
+
+def acceptance_for(kind: str, name: str, file: str, start: int, end: int,
+                   verify: str) -> list[str]:
+    """Deterministic done-criteria per task kind. Every bullet names the
+    file:lines it can be checked against; `verify` is always last."""
+    where = f"{file}:{start}-{end}"
+    if kind == "todo":
+        return [f"The marker at {where} is resolved or removed with a recorded reason",
+                "No new TODO/FIXME/HACK markers added nearby",
+                f"Verify: `{verify}`"]
+    if kind == "missing-tests":
+        return [f"New tests cover `{name}` ({where}) including one failure case",
+                "Tests follow the nearest existing test file's pattern",
+                f"Verify: `{verify}`"]
+    if kind == "no-response-model":
+        return [f"Handler `{name}` ({where}) declares an explicit response_model",
+                "Existing route tests still pass unmodified",
+                f"Verify: `{verify}`"]
+    return [f"`{name}` ({where}) documents inputs, outputs, and errors",
+            "Docstring style matches sibling functions in the file",
+            f"Verify: `{verify}`"]
 
 
 def _test_blob(con, sha: str) -> str:
@@ -130,6 +234,7 @@ def collect(db: Path, sha: str) -> list[dict]:
 
 def _collect(con, sha: str) -> list[dict]:
     tasks: list[dict] = []
+    test_cache: dict = {}
     test_blob = _test_blob(con, sha)
 
     # 1. TODO markers at their exact lines (a marker is a small job; the
@@ -155,7 +260,8 @@ def _collect(con, sha: str) -> list[dict]:
                     file=path, start=lineno, end=lineno, symbol=None,
                     evidence=[{"chunk_id": chunk_id, "path": path,
                                "lines": f"{start}-{end}"}],
-                    detail=f"{len(marks)} marker(s): {sorted(set(marks))}"))
+                    detail=f"{len(marks)} marker(s): {sorted(set(marks))}",
+                    test_cache=test_cache))
 
     # 2. Public functions without tests and without a dedicated test file.
     # Source/test split is index-derived (suffix + test-path rules), never a
@@ -184,7 +290,8 @@ def _collect(con, sha: str) -> list[dict]:
                           " AND NOT (end_line < ? OR start_line > ?)"
                           " ORDER BY start_line LIMIT 2",
                           (sha, path, start, end))],
-            detail=f"`{name}` has no test references and no dedicated test file"))
+            detail=f"`{name}` has no test references and no dedicated test file",
+            test_cache=test_cache))
 
     # 3. Route handlers without an explicit response_model. The decorator
     # span (decorator_line..handler_start) is checked line-wise: a chunk
@@ -213,7 +320,8 @@ def _collect(con, sha: str) -> list[dict]:
                               " AND NOT (end_line < ? OR start_line > ?)"
                               " ORDER BY start_line LIMIT 2",
                               (sha, file, start, end))],
-                detail=f"handler `{name}` declares no response_model"))
+                detail=f"handler `{name}` declares no response_model",
+                test_cache=test_cache))
 
     # 4. Public functions without docstrings (low weight: at most 3 tasks,
     # smallest files first — avoids flooding from stylistic absence).
@@ -242,12 +350,14 @@ def _collect(con, sha: str) -> list[dict]:
                           " AND NOT (end_line < ? OR start_line > ?)"
                           " ORDER BY start_line LIMIT 1",
                           (sha, path, start, end))],
-            detail=f"`{name}` has no docstring"))
+            detail=f"`{name}` has no docstring",
+            test_cache=test_cache))
     return tasks
 
 
 def _task(con, sha: str, *, kind: str, file: str, start: int, end: int,
-          symbol: str | None, evidence: list[dict], detail: str) -> dict:
+          symbol: str | None, evidence: list[dict], detail: str,
+          test_cache: dict | None = None) -> dict:
     lines = max(1, end - start + 1)
     name = (symbol or Path(file).stem).split(".")[-1]
     fi = fan_in(con, sha, name, file)
@@ -257,15 +367,24 @@ def _task(con, sha: str, *, kind: str, file: str, start: int, end: int,
     risk = fi["total"] + sum(5 for kw in RISK_KEYWORDS if kw in blob)
     prereqs = prerequisites(con, sha, file)
     title, description = deterministic_title(kind, name, file)
+    cache = test_cache if test_cache is not None else {}
+    example = nearest_test_file(con, sha, symbol or None, file, cache)
+    verify = verify_command(kind, name, example)
+    clean_evidence = [e for e in evidence if e]
+    first = clean_evidence[0] if clean_evidence else None
     return {"id": f"{kind}-{Path(file).stem}-{name}-{start}",
             "kind": kind, "title": title, "description": description,
             "file": file, "start": start, "end": end, "symbol": symbol,
-            "evidence": [e for e in evidence if e],
+            "evidence": clean_evidence,
             "detail": detail, "lines": lines, "files_touched": 1,
             "fan_in": fi["total"], "fan_in_detail": fi,
             "difficulty": difficulty, "risk": risk,
             "high_risk": risk >= CFG.TASK_HIGH_RISK,
-            "prerequisites": prereqs, "tours": []}
+            "prerequisites": prereqs, "tours": [],
+            "acceptance": acceptance_for(kind, name, file, start, end, verify),
+            "verify": verify, "example_test": example,
+            "open_first": ({"path": first["path"], "lines": first["lines"]}
+                           if first else None)}
 
 
 def prerequisites(con, sha: str, path: str) -> list[str]:
@@ -344,9 +463,27 @@ def validate(db: Path, sha: str, tasks: list[dict],
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
         known_tours = {p.stem for p in tours_dir.glob("*.yaml")}
+        known_files = {r[0] for r in con.execute(
+            "SELECT path FROM files WHERE snapshot_sha = ?", (sha,))}
         for task in tasks:
             if not task["evidence"]:
                 problems.append(f"{task['id']}: no evidence")
+            if not task.get("acceptance"):
+                problems.append(f"{task['id']}: no acceptance criteria")
+            example = task.get("example_test")
+            if example is not None and example not in known_files:
+                problems.append(f"{task['id']}: example test missing {example}")
+            first = task.get("open_first") or {}
+            if first:
+                if first.get("path") not in known_files:
+                    problems.append(f"{task['id']}: open_first missing "
+                                    f"{first.get('path')}")
+            verify = task.get("verify", "")
+            if verify.startswith("pytest "):
+                parts = verify[len("pytest "):].split()
+                vpath = parts[0] if parts and not parts[0].startswith("-") else ""
+                if vpath and vpath not in known_files:
+                    problems.append(f"{task['id']}: verify target missing {vpath}")
             row = con.execute("SELECT 1 FROM files WHERE snapshot_sha = ?"
                               " AND path = ?", (sha, task["file"])).fetchone()
             if row is None:

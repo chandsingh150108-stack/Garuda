@@ -76,6 +76,20 @@ def test_high_risk_excluded_from_top_five():
     assert top[-1]["id"] == "risky-easy"  # listed, never hidden
 
 
+def test_richer_bodies_validate():
+    tasks = TS.rank(TS.collect(DB, SHA), 50)
+    assert TS.validate(DB, SHA, tasks, Path("evals/tours")) == []
+    for task in tasks:
+        assert len(task["acceptance"]) >= 2, task["id"]
+        assert task["acceptance"][-1].startswith("Verify: `pytest"), task["id"]
+        assert task["verify"].startswith("pytest"), task["id"]
+        assert task["open_first"] is not None, task["id"]
+        first = task["open_first"]
+        assert first["path"] == task["file"], task["id"]
+        if task["example_test"] is not None:
+            assert task["verify"].split(" ")[1] == task["example_test"], task["id"]
+
+
 def test_tour_links_resolve():
     tasks = TS.link_tours(TS.collect(DB, SHA), Path("evals/tours"),
                           Path("data/cache"))

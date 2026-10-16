@@ -162,6 +162,11 @@ class TaskEvidence(BaseModel):
     lines: str
 
 
+class TaskOpenFirst(BaseModel):
+    path: str
+    lines: str
+
+
 class TaskItem(BaseModel):
     id: str
     kind: str
@@ -181,6 +186,10 @@ class TaskItem(BaseModel):
     high_risk: bool = False
     prerequisites: list[str] = Field(default_factory=list)
     tours: list[str] = Field(default_factory=list)
+    acceptance: list[str] = Field(default_factory=list)
+    verify: str = ""
+    example_test: str | None = None
+    open_first: TaskOpenFirst | None = None
 
 
 class TasksResponse(BaseModel):
