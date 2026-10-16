@@ -136,9 +136,20 @@ def _docstring(body, data: bytes) -> str | None:
 
 
 def _collect_calls(fn_node, data: bytes) -> list[dict]:
+    # Nested function bodies belong to the inner symbol: their calls are
+    # recorded on the inner function only, not re-attributed to every
+    # enclosing function (which produced spurious `likely` edges). Lambdas
+    # have no symbol record, so their calls stay with the enclosing
+    # function; decorator/default-arg edge cases are documented in the
+    # perf-07 commit (negligible vs the removed double-attribution).
+    nested = [(n.start_byte, n.end_byte) for n in T.walk(fn_node)
+              if n.type == "function_definition" and n is not fn_node]
     calls = []
     for node in T.walk(fn_node):
         if node.type != "call":
+            continue
+        s, e = node.start_byte, node.end_byte
+        if any(a <= s and e <= b for (a, b) in nested):
             continue
         fn = node.children[0] if node.children else None
         if fn is None:
