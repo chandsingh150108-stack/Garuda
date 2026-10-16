@@ -109,3 +109,10 @@
 | 2026-10-17 | Phase 22 support | manual grade 8 cached demo answers | 8/8 supported [0.68, 1.00] | All claims trace to cited defining files; q25 billing residual outside sample (honest limit) |
 | 2026-10-17 | Phase 22 regression | `pytest tests/security -q` | PASS 29/29 | 22 prior + 7 new `test_redteam_regressions.py` green |
 | 2026-10-17 | Phase 22 suite | `pytest tests/security/test_redteam_regressions.py -q` | PASS 7/7 | summary gate, family coverage, F01/F02/F05/F11/F12 pins |
+| 2026-10-17 | perf-00 | `python scripts/bench_index_costs.py --reps 5` | RECORDED | spawn 0.28–0.34s vs in-process 0.01s; 11 timeout files all <0.16s in-process; pickled-result sizes split 64–119KB FAIL vs ≤63KB ok — the 64KB deadlock diagnosis |
+| 2026-10-17 | perf-01 | rendezvous fix + `pytest tests/test_parse_python.py -q` | PASS 16/16 | drain-while-join; >64KB round-trip regression; `validation.py` (deadlocked at 10s AND 120s) parses in 0.4s |
+| 2026-10-17 | perf-02/03/04 | progress, fast-path, batched commits + store/chunker tests | PASS | stderr progress, failed→lines, batched==per-file `dump_rows` |
+| 2026-10-17 | perf-05 | D3.2 amendment + pool tests + pool-vs-spawn equivalence | PASS 34/34 + identical on 5 fst files | severity: LOCKED amendment recorded before code |
+| 2026-10-17 | perf-06 | plan-pruning gate (measure first) | NOT ADOPTED | 0.10–0.52s/file even at 215KB; ~5% gain vs chunk-identity risk |
+| 2026-10-17 | perf-07 | de-nesting + goldens + fst edge review | PASS, edges identical 675/943 | goldens unshifted; improvement lands only where nesting exists |
+| 2026-10-17 | perf acceptance | fst rebuild + full sklearn probe | MIXED (documented) | fst: 16.9s but 1,267 vs 1,279 chunks — diagnosed as deadlock-fix dividend (44 degraded lines-spans → 32 AST spans on 3 files; other 1,235 identical); worktree control proved old code also no longer reproduces the artifact. sklearn: 1045/1045 parse, 1124/10,113 index in 123.2s, 4/5 identifiers, p95 3.2s (missing-index root cause found, follow-up), symbol ask valid, conceptual abstain honest, tasks 10/10, serve :8001 OK |

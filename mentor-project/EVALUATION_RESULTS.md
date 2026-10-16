@@ -231,3 +231,23 @@ Reading: `run_isolated` (`mentor/parse/parse_worker.py:29-44`) joins-then-reads;
 ## perf-05 gate: plan pruning NOT ADOPTED (measured 2026-10-17)
 
 `plan_file` via the persistent pool on sklearn's biggest files: estimator_checks.py (215KB) 0.52s, _classification.py 0.10s, _data.py 0.13s, _forest.py 0.11s. Full-tree plan build + pickle + transfer is linear and small next to the (now removed) spawn tax. Pruning to top-level-only plans would save ~0.05s typical / ~0.4s worst-case per file while risking chunk-identity drift on oversized units (line-split fallback changes `chunk_id`s, invalidating caches/tours/audit). Rejected: ~5% gain cannot justify identity risk. The deadlock fix + worker reuse already removed the two binding costs.
+
+## perf acceptance: sklearn probe (2026-10-17, `scikit-learn@85593ca`, BSD-3-Clause)
+
+All seven perf steps landed (perf-00–perf-07). End-to-end proof on a 1,124-file repo:
+
+| Stage | Result |
+|---|---|
+| clone + pin | full clone, HEAD `85593ca`, clean tree, LICENSE verified BSD-3-Clause on the checkout |
+| manifest | 1,856 entries: 1,124 indexed (1,038 py, 16.7MB), 732 skipped by extension (`.pyx`/C++/media — expected coverage limit) |
+| parse | **1045/1045 (100.0%), failed=0** (pre-fix: 1034/1045 with 11 deadlock-burns). Progress ticks every 100 files |
+| index | **1124 files / 10,113 chunks / 12,060 symbols / 8,857 imports / 55,211 edges, failed=[] in 123.2s** (~0.11s/file steady, progress every 50 files). Pre-fix: stalled indefinitely, aborted twice |
+| identifier probe | 4/5 definition chunks top-3 (`RandomForestClassifier`, `cross_val_score`, `ColumnTransformer`, `StandardScaler` HIT; `check_array` MISS — `estimator_checks.py` outranks the `validation.py` definition on pure lexical frequency) |
+| retrieval latency (n=15, cold AND warm identical) | p50 ~1.1s / p95 ~3.2s — breaches the 200ms gate. Profiled: lexical 2–10ms, **symbol retriever 0.4–2.8s**, rest <1ms. Root cause found (see below), fix proposed as follow-up, NOT in this batch |
+| live asks (local 4B) | symbol-precise (`RandomForestClassifier`): validated answer, repairs=0, cites `_forest.py:1590-1618` etc. Conceptual ("How does a random forest classify?"): honest abstain (closest refs are junk — the documented lexical-only floor) |
+| tasks | 10 ranked TODOs validate clean |
+| arch | 0 nodes / 0 edges — BY DESIGN (D12.2 component rules are fst-path-specific; new repos need their own mapping). Side effect found: `arch` CLI hardcodes the `data/cache/arch_fst.mmd` out path and clobbered the demo cache twice; restored via deterministic regen (8n/14e verified). Recommend a `--out` default scoped by repo id |
+| tours | not run (seed definitions are fst-specific; needs a sklearn seed file) |
+| serve :8001 | status OK (`sklearn@85593ca`, 1,124 files, 10,113 chunks). Note: registry id is hardcoded `fst` in `cmd_serve` (pre-existing demo shortcut); `dirty=True` shown despite a clean tree — worth a look, not a blocker |
+
+New finding (out of scope, recorded for follow-up): `schema.sql` has **zero secondary indexes** — every symbol/path lookup is a full scan of wide TEXT rows. Measured consequence above. Fix sketch: `symbols(snapshot_sha,name)`, `symbols(snapshot_sha,qualname)`, `chunks(snapshot_sha,path,start_line,end_line)` covering indexes → schema v3 + rebuild (per the schema rule). Same latent cliff exists for edge traversal (tours) and task collection at this scale.
