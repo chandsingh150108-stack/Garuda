@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import sys
+import time
 from pathlib import Path
 
 from mentor.index import chunker as K
@@ -85,9 +87,16 @@ def build(repo_root: Path, manifest_path: Path, parses_path: Path, out: Path,
             con.execute("INSERT INTO snapshots(sha, repo_id, file_count) VALUES (?, ?, ?)",
                         (sha, repo_id, manifest["count"]))
         indexed = [e for e in manifest["files"] if e.get("skipped") is None]
-        for entry in sorted(indexed, key=lambda e: e["path"]):
+        total = len(indexed)
+        t0 = time.monotonic()
+        for i, entry in enumerate(sorted(indexed, key=lambda e: e["path"]), start=1):
             _index_file(con, root, sha, entry, parsed_files.get(entry["path"]),
                         timeout_s, stats)
+            if i == total or i % 50 == 0:
+                dt = time.monotonic() - t0
+                print(f"index {i}/{total} files={stats['files']} "
+                      f"chunks={stats['chunks']} {dt:.1f}s",
+                      file=sys.stderr, flush=True)
         attach_edges_and_config(con, sha, parses)
         with con:
             con.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('optimize')")

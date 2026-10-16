@@ -128,17 +128,20 @@ def parse_one(repo_root: Path, relpath: str,
 def parse_many(repo_root: Path, relpaths: list[str],
                timeout_s: float = C.PARSE_TIMEOUT_S,
                size_cap: int = C.PARSE_MAX_BYTES,
-               retries: int = 1) -> dict[str, dict]:
+               retries: int = 1, progress=None) -> dict[str, dict]:
     """Parse files sequentially (one child at a time). Deterministic order.
 
     Transient worker deaths (proven: identical input passes and crashes
     across runs in tree-sitter 0.26.0 on Windows) are retried `retries`
     times in a fresh process. Only crash/timeout reasons retry; deterministic
     skips (size, path-escape, unsupported) never retry. Persistent failures
-    stay `parse_failed`. Each result carries its attempt count.
+    stay `parse_failed`. Each result carries its attempt count. `progress`,
+    if given, is called as `progress(done, total)` after each file (used by
+    CLI progress logging; never affects results).
     """
     out: dict[str, dict] = {}
     remaining = sorted(relpaths)
+    total = len(remaining)
     attempt = 0
     while remaining and attempt <= retries:
         attempt += 1
@@ -147,6 +150,8 @@ def parse_many(repo_root: Path, relpaths: list[str],
             res = parse_one(repo_root, rel, timeout_s, size_cap)
             res["attempts"] = attempt
             out[rel] = res
+            if progress is not None:
+                progress(len(out), total)
             reason = res.get("reason", "")
             if res.get("status") != "parsed" and (
                     reason == "timeout" or reason.startswith("crash")):

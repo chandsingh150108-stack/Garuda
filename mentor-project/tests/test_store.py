@@ -75,6 +75,13 @@ def test_idempotent_rebuild(tmp_path: Path):
     assert S.dump_rows(a) == S.dump_rows(b)
 
 
+def test_build_progress_goes_to_stderr(tmp_path: Path, capsys):
+    _build_tmp(tmp_path, "p.sqlite")
+    captured = capsys.readouterr()
+    assert "index 2/2" in captured.err
+    assert captured.out == ""
+
+
 def test_reconstruction_tmp(tmp_path: Path):
     out = _build_tmp(tmp_path)
     repo = _repo_for(tmp_path)

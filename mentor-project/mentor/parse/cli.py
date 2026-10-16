@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from mentor.parse import config_extract, edges as E
@@ -78,7 +79,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     repo = Path(args.repo)
     rels = load_manifest(repo, args.sha)
-    files = W.parse_many(repo, rels, timeout_s=args.timeout)
+
+    def progress(done: int, total: int):
+        if done == total or done % 100 == 0:
+            print(f"parse {done}/{total}", file=sys.stderr, flush=True)
+
+    files = W.parse_many(repo, rels, timeout_s=args.timeout, progress=progress)
     parsed = sum(1 for r in files.values() if r.get("status") == "parsed")
     failed = sorted(p for p, r in files.items() if r.get("status") != "parsed")
     edge_data = E.build_edges(files)
