@@ -10,6 +10,7 @@ from __future__ import annotations
 import multiprocessing as mp
 import os
 import queue
+import time
 from pathlib import Path
 
 from mentor import config as C
@@ -26,17 +27,59 @@ def _child_target(box, func, func_args):
         box.put({"ok": None, "reason": f"crash: {type(exc).__name__}"})
 
 
+_MISSING = object()
+
+_POLL_INTERVAL_S = 0.1
+_EXIT_DRAIN_S = 5.0
+_TEARDOWN_JOIN_S = 10.0
+
+
+def _take(outbox) -> dict | object:
+    """One non-blocking take from the result queue."""
+    try:
+        return outbox.get_nowait()
+    except queue.Empty:
+        return _MISSING
+
+
 def run_isolated(fn, args: tuple, timeout_s: float) -> dict:
     """Run `fn(*args)` in a child process. Returns {'ok': result} or
-    {'ok': None, 'reason': 'timeout'|'crash'}."""
+    {'ok': None, 'reason': 'timeout'|'crash'}.
+
+    Rendezvous rule (perf fix): the result queue is drained WHILE joining,
+    never only after. Draining unblocks the child's feeder on results larger
+    than the OS pipe buffer (~64KB measured); join-then-read deadlocks on
+    those (parent waits for exit, exit waits for drain, drain waits for a
+    read that never comes). Timeout semantics are unchanged: no result
+    within `timeout_s` while the child is alive is still a timeout.
+    """
     ctx = mp.get_context("spawn")
     outbox = ctx.Queue()
     proc = ctx.Process(target=_child_target, args=(outbox, fn, args))
     proc.start()
-    proc.join(timeout_s)
+    deadline = time.monotonic() + timeout_s
+    result = _MISSING
+    while result is _MISSING and time.monotonic() < deadline:
+        result = _take(outbox)
+        if result is not _MISSING or not proc.is_alive():
+            break
+        proc.join(min(_POLL_INTERVAL_S, max(0.0, deadline - time.monotonic())))
+    if result is _MISSING and not proc.is_alive():
+        # Exited with data still in flight: one bounded blocking take.
+        try:
+            result = outbox.get(timeout=_EXIT_DRAIN_S)
+        except queue.Empty:
+            pass
+    if result is not _MISSING:
+        if proc.is_alive():
+            proc.join(_TEARDOWN_JOIN_S)
+            if proc.is_alive():
+                proc.terminate()
+                proc.join(_TEARDOWN_JOIN_S)
+        return result
     if proc.is_alive():
         proc.terminate()
-        proc.join(10)
+        proc.join(_TEARDOWN_JOIN_S)
         return {"ok": None, "reason": "timeout"}
     try:
         return outbox.get_nowait()

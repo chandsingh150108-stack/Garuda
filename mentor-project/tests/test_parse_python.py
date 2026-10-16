@@ -120,12 +120,27 @@ def _sleep_secs(n: float):
     return "awake"
 
 
+def _big_result():
+    return {"blob": "x" * 200_000}
+
+
 def test_worker_timeout_mechanism():
     t0 = time.perf_counter()
     res = W.run_isolated(_sleep_secs, (30.0,), timeout_s=2.0)
     dt = time.perf_counter() - t0
     assert res == {"ok": None, "reason": "timeout"}
     assert dt < 10.0
+
+
+def test_worker_large_result_round_trips():
+    # Rendezvous regression (perf): results above the ~64KB pipe buffer
+    # deadlocked join-then-read forever (mislabeled "timeout"). The worker
+    # must drain while joining and return the payload intact and fast.
+    t0 = time.perf_counter()
+    res = W.run_isolated(_big_result, (), timeout_s=30.0)
+    dt = time.perf_counter() - t0
+    assert res == {"ok": {"blob": "x" * 200_000}}
+    assert dt < 30.0
 
 
 def test_pathological_nesting_does_not_hang(tmp_path: Path):
