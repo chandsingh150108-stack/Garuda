@@ -132,6 +132,37 @@ def test_worker_timeout_mechanism():
     assert dt < 10.0
 
 
+def _suicide():
+    import os as _os
+    _os._exit(1)
+
+
+def test_pool_serves_sequential_calls_with_one_spawn():
+    with W.WorkerPool(timeout_s=10.0) as pool:
+        assert pool.run(_sleep_secs, (0,), 10.0) == {"ok": "awake"}
+        assert pool.run(_sleep_secs, (0,), 10.0) == {"ok": "awake"}
+        assert pool.jobs == 2
+        assert pool.respawns == 0
+
+
+def test_pool_respawns_after_child_death():
+    with W.WorkerPool(timeout_s=10.0) as pool:
+        assert pool.run(_sleep_secs, (0,), 10.0) == {"ok": "awake"}
+        dead = pool.run(_suicide, (), 10.0)
+        assert dead["ok"] is None
+        assert pool.run(_sleep_secs, (0,), 10.0) == {"ok": "awake"}
+        assert pool.respawns >= 1
+
+
+def test_pool_timeout_shape_matches_run_isolated():
+    with W.WorkerPool(timeout_s=10.0) as pool:
+        t0 = time.perf_counter()
+        res = pool.run(_sleep_secs, (30.0,), 2.0)
+        dt = time.perf_counter() - t0
+        assert res == {"ok": None, "reason": "timeout"}
+        assert dt < 10.0
+
+
 def test_worker_large_result_round_trips():
     # Rendezvous regression (perf): results above the ~64KB pipe buffer
     # deadlocked join-then-read forever (mislabeled "timeout"). The worker

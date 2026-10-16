@@ -56,11 +56,13 @@ def _plan_in_child(repo_root: str, relpath: str, language: str, max_depth: int) 
 
 
 def plan_file(repo_root: Path, relpath: str, language: str,
-              timeout_s: float = 10.0, retries: int = 1) -> dict:
+              timeout_s: float = 10.0, retries: int = 1,
+              pool=None) -> dict:
     """Parent-side AST plan with timeout. Never raises for bad input.
 
     Transient worker deaths retry once in a fresh process (same policy as
-    D3.2 clarification); deterministic failures never retry.
+    D3.2 clarification); deterministic failures never retry. `pool`, when
+    given, serves the isolated plan from the persistent worker.
     """
     root = repo_root.resolve()
     try:
@@ -75,8 +77,13 @@ def plan_file(repo_root: Path, relpath: str, language: str,
     attempts = 0
     while True:
         attempts += 1
-        result = W.run_isolated(_plan_in_child,
-                                (str(root), relpath, language, PLAN_MAX_DEPTH), timeout_s)
+        if pool is not None:
+            result = pool.run(_plan_in_child,
+                              (str(root), relpath, language, PLAN_MAX_DEPTH), timeout_s)
+        else:
+            result = W.run_isolated(_plan_in_child,
+                                    (str(root), relpath, language, PLAN_MAX_DEPTH),
+                                    timeout_s)
         if result.get("ok") is not None:
             return result["ok"]
         reason = result.get("reason", "unknown")
@@ -254,7 +261,7 @@ def assemble(repo_sha: str, path: str, spans: list[tuple[int, int, bool, str]],
 def chunk_file(repo_root: Path, relpath: str, symbols: list[dict],
                timeout_s: float = 10.0,
                budget: int = CHUNK_BUDGET_TOKENS,
-               force_lines: bool = False) -> dict:
+               force_lines: bool = False, pool=None) -> dict:
     """Chunk one indexed file. Returns {status, chunks} or {status: failed}.
 
     `force_lines` skips the AST plan (and its worker spawn + timeout budget)
@@ -275,7 +282,7 @@ def chunk_file(repo_root: Path, relpath: str, symbols: list[dict],
     language = T.LANGUAGE_FOR_EXT.get(suffix)
     spans: list[tuple[int, int, bool, str]] | None = None
     if language in ("python", "typescript", "tsx") and not force_lines:
-        plan = plan_file(root, relpath, language, timeout_s)
+        plan = plan_file(root, relpath, language, timeout_s, pool=pool)
         if plan.get("status") == "ok":
             spans = merge_spans(split_units(plan["units"], lines, budget), lines, budget)
     if spans is None:

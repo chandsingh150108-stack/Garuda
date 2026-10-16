@@ -27,6 +27,121 @@ def _child_target(box, func, func_args):
         box.put({"ok": None, "reason": f"crash: {type(exc).__name__}"})
 
 
+def _pool_target(inbox, outbox):
+    """Serve loop for a persistent worker child (must be picklable).
+
+    One job at a time; each job reuses `_child_target` so per-job crash
+    containment is identical to `run_isolated`. `None` is the shutdown
+    sentinel. A native crash kills this loop; the supervisor respawns.
+    """
+    while True:
+        try:
+            job = inbox.get()
+        except Exception:
+            return
+        if job is None:
+            return
+        func, func_args = job
+        _child_target(outbox, func, func_args)
+
+
+class WorkerPool:
+    """One persistent spawned child serving sequential isolated calls.
+
+    Same per-call contract as `run_isolated` (timeout/crash shapes, caller
+    retries, drain-while-join on every call), but the ~0.3s spawn tax is
+    paid once per pool instead of once per file. The supervisor respawns on
+    any crash/timeout response with FRESH queues before the next call, so a
+    poisoned worker (or stale pipe bytes) can never affect a later file.
+    Children are daemonized so no orphan survives the parent. Either reuse
+    via `with WorkerPool(...) as pool` or call `close()` explicitly.
+    """
+
+    def __init__(self, timeout_s: float = C.PARSE_TIMEOUT_S):
+        self.timeout_s = timeout_s
+        self._ctx = mp.get_context("spawn")
+        self._proc = None
+        self._inbox = None
+        self._outbox = None
+        self.jobs = 0
+        self.respawns = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+    def _spawn(self):
+        self._inbox = self._ctx.Queue()
+        self._outbox = self._ctx.Queue()
+        self._proc = self._ctx.Process(
+            target=_pool_target, args=(self._inbox, self._outbox), daemon=True)
+        self._proc.start()
+
+    def _discard(self):
+        proc, inbox = self._proc, self._inbox
+        self._proc = None
+        self._inbox = None
+        self._outbox = None
+        try:
+            if proc is not None:
+                if proc.is_alive():
+                    proc.terminate()
+                proc.join(_TEARDOWN_JOIN_S)
+        finally:
+            try:
+                if inbox is not None:
+                    inbox.put(None)
+            except Exception:
+                pass
+
+    def _ensure(self):
+        if self._proc is None:
+            if self.jobs > 0 or self.respawns > 0:
+                self.respawns += 1
+            self._spawn()
+        elif not self._proc.is_alive():
+            self._discard()
+            self.respawns += 1
+            self._spawn()
+
+    def run(self, fn, args: tuple, timeout_s: float | None = None) -> dict:
+        """Serve one isolated call. Same return shapes as `run_isolated`."""
+        limit = self.timeout_s if timeout_s is None else timeout_s
+        self._ensure()
+        self.jobs += 1
+        try:
+            self._inbox.put((fn, args))
+        except Exception as exc:
+            self._discard()
+            return {"ok": None, "reason": f"crash: put-{type(exc).__name__}"}
+        deadline = time.monotonic() + limit
+        while time.monotonic() < deadline:
+            try:
+                return self._outbox.get_nowait()
+            except queue.Empty:
+                pass
+            if not self._proc.is_alive():
+                break
+            self._proc.join(min(_POLL_INTERVAL_S,
+                                max(0.0, deadline - time.monotonic())))
+        if not self._proc.is_alive():
+            try:
+                return self._outbox.get(timeout=_EXIT_DRAIN_S)
+            except queue.Empty:
+                pass
+        was_alive = self._proc.is_alive()
+        self._discard()
+        if was_alive:
+            return {"ok": None, "reason": "timeout"}
+        return {"ok": None, "reason": "crash: no-result"}
+
+    def close(self):
+        self._discard()
+
+
 _MISSING = object()
 
 _POLL_INTERVAL_S = 0.1
@@ -104,8 +219,14 @@ def parse_file_nocheck(repo_root: str, relpath: str) -> dict:
 
 def parse_one(repo_root: Path, relpath: str,
               timeout_s: float = C.PARSE_TIMEOUT_S,
-              size_cap: int = C.PARSE_MAX_BYTES) -> dict:
-    """Parent-side parse with size cap + timeout. Never raises for bad input."""
+              size_cap: int = C.PARSE_MAX_BYTES,
+              pool: WorkerPool | None = None) -> dict:
+    """Parent-side parse with size cap + timeout. Never raises for bad input.
+
+    `pool`, when given, serves the isolated call from the persistent worker
+    (same shapes and timeouts as `run_isolated`); otherwise one spawn is
+    used, exactly as before.
+    """
     root = repo_root.resolve()
     try:
         target = F.safe_join(root, relpath)
@@ -118,7 +239,10 @@ def parse_one(repo_root: Path, relpath: str,
             return {"path": relpath, "status": "parse_failed", "reason": "size"}
     except OSError as exc:
         return {"path": relpath, "status": "parse_failed", "reason": f"stat: {exc}"}
-    result = run_isolated(parse_file_nocheck, (str(root), relpath), timeout_s)
+    if pool is not None:
+        result = pool.run(parse_file_nocheck, (str(root), relpath), timeout_s)
+    else:
+        result = run_isolated(parse_file_nocheck, (str(root), relpath), timeout_s)
     if result.get("ok") is None:
         return {"path": relpath, "status": "parse_failed",
                 "reason": result.get("reason", "unknown")}
@@ -128,7 +252,8 @@ def parse_one(repo_root: Path, relpath: str,
 def parse_many(repo_root: Path, relpaths: list[str],
                timeout_s: float = C.PARSE_TIMEOUT_S,
                size_cap: int = C.PARSE_MAX_BYTES,
-               retries: int = 1, progress=None) -> dict[str, dict]:
+               retries: int = 1, progress=None,
+               pool: WorkerPool | None = None) -> dict[str, dict]:
     """Parse files sequentially (one child at a time). Deterministic order.
 
     Transient worker deaths (proven: identical input passes and crashes
@@ -143,20 +268,29 @@ def parse_many(repo_root: Path, relpaths: list[str],
     remaining = sorted(relpaths)
     total = len(remaining)
     attempt = 0
-    while remaining and attempt <= retries:
-        attempt += 1
-        retry: list[str] = []
-        for rel in remaining:
-            res = parse_one(repo_root, rel, timeout_s, size_cap)
-            res["attempts"] = attempt
-            out[rel] = res
-            if progress is not None:
-                progress(len(out), total)
+    own_pool = pool is None
+    if own_pool:
+        pool = WorkerPool(timeout_s)
+    assert pool is not None
+    try:
+        while remaining and attempt <= retries:
+            attempt += 1
+            retry: list[str] = []
+            for rel in remaining:
+                res = parse_one(repo_root, rel, timeout_s, size_cap, pool=pool)
+                res["attempts"] = attempt
+                out[rel] = res
+                if progress is not None:
+                    progress(len(out), total)
             reason = res.get("reason", "")
             if res.get("status") != "parsed" and (
                     reason == "timeout" or reason.startswith("crash")):
                 retry.append(rel)
-        remaining = retry
+            remaining = retry
+    finally:
+        if own_pool:
+            assert pool is not None
+            pool.close()
     return out
 
 

@@ -339,6 +339,16 @@
 - Fallback: `retries=0` restores single-attempt behavior; nothing else changes.
 - Date: 2026-10-12
 
+## D3.2 amendment — supervised persistent worker (SUPERSEDES spawn-per-call)
+- Status: LOCKED
+- Decision: `parse_many` and `chunker.plan_file` may serve sequential calls from ONE persistent spawned child (`parse_worker.WorkerPool`: one process, request/response over the same Queue protocol, supervisor respawns on crash/timeout before the next call). Per-call timeout, one-retry, attempt-count, and drain-while-join semantics are unchanged; `run_isolated` stays as the API (and the fallback: deleting the pool call-sites restores spawn-per-call with no other change).
+- Alternatives: Stay spawn-per-call (rejected: measured ~0.3s spawn tax per call, ~30x the parse itself; ~1,800 spawns for sklearn — see EVALUATION_RESULTS.md perf-00); threads (rejected: a native crash kills the indexer — the original D3.2 reason stands).
+- Evidence: perf-00 spawn-tax measurement (0.28–0.34s spawned vs 0.009–0.01s in-process); crash-poisoning + determinism tests in `tests/test_parse_python.py`.
+- Reason: Same containment (crash/timeout still contained per call and retried once), ~30x less overhead per file.
+- Confidence: Medium-high (measured tax; containment re-proven by tests)
+- Fallback: Revert call-sites to `run_isolated`; delete the pool.
+- Date: 2026-10-17
+
 ## D5.1 Query analysis
 - Status: LOCKED
 - Decision: Extract backticked identifiers, CamelCase/snake_case word tokens, route-like paths (`/seg/seg`), and file-like tokens (`name.ext`); keep the original query string for display and Phase 7 dense use. Identifier splitting reuses Phase 4 `split_identifier` for FTS matching.
