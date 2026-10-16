@@ -1,0 +1,10 @@
+{
+ "family": "f07_malicious_repos",
+ "result": "PASS",
+ "notes": [
+  "symlinks unavailable on platform",
+  "binary skipped (extension)",
+  "deep nesting -> parsed"
+ ],
+ "findings": []
+}

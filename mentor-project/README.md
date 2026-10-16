@@ -7,7 +7,8 @@ Local-first AI mentor: indexes one OSS repo at pinned SHA, grounded Q&A with exa
 - PROJECT_ROOT: this folder (`mentor-project/`)
 - Zero-cost (evidence: `DECISIONS.md` A-G gates, `VALIDATION_REPORT.md`, `EVALUATION_RESULTS.md`): Python venv + SQLite FTS5 + llama-server + Qwen3-4B-Instruct Q4_K_M (G2 winner, Apache-2.0, fits 8 GB); no paid APIs, VMs, or hosted DBs required. Cloud (Groq/Gemini free tiers) is opt-in, public-repo-only, default OFF.
 - Local-first (evidence: `tests/test_offline.py`, `tests/test_no_keys.py`, `scripts/offline_check.py`): default NOTHING leaves the laptop; `MENTOR_MODE=LOCAL-OFFLINE` vetoes cloud unconditionally; demo runs from precomputed cache (`mentor precompute`, 8/10 answers cached + labelled).
-- Status: Phase 19 in progress. See `PROJECT_STATUS.md`.
+- Status: Phase 22 PASSED 2026-10-17 (all 23 phases; red team worst=medium, 0 critical; G3/G4 NOT ADOPTED; support 8/8; study pre-registered DEFERRED n=0). See `PROJECT_STATUS.md`.
+- Known limitations (honest, measured): Py+TS only; `likely` call-hops may be wrong (labelled); file-P@10 0.05 — conceptual questions often miss (lexical floor); validator proves citation validity/containment, never semantic entailment (q25 billing residual); 10/18 adversarial unanswerables reach the model (validator + abstention are the backstop); user study deferred (no pool); free-cloud quotas volatile (re-verify demo week).
 
 ## Quick start (target laptop)
 

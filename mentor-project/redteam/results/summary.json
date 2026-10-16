@@ -1,0 +1,20 @@
+{
+ "worst": "medium",
+ "critical_open": 0,
+ "families": [
+  "f01_hallucinated_citations",
+  "f02_fake_ranges",
+  "f03_stale_citations",
+  "f04_prompt_injection",
+  "f05_exfiltration",
+  "f06_access_control",
+  "f07_malicious_repos",
+  "f08_quota_failure",
+  "f09_model_failure",
+  "f10_indexing_failure",
+  "f11_unsupported_questions",
+  "f13_doc_drift",
+  "f12_contamination"
+ ],
+ "f12": "B6 1/20 both copies; G3 B1 0.059/B3 0.050 orig, B1 0.055/B3 0.050 cf"
+}

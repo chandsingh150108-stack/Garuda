@@ -1,0 +1,8 @@
+{
+ "family": "f03_stale_citations",
+ "result": "PASS",
+ "notes": [
+  "sampled .agents/skills/library-skills/.library-skills.json:1-4"
+ ],
+ "findings": []
+}

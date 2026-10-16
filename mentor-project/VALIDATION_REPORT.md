@@ -102,3 +102,10 @@
 | 2026-10-16 | Phase 21 demo gate | `python scripts/demo_check.py` ×3 consecutive | PASS 9/9, 9/9, 9/9 (~0.7 s each) | Verify/index+cache, status, arch 8n/14e, cached signup answer, 8-step tour, cite→SHA, script-adapter abstain, 10 tasks, stale predicate |
 | 2026-10-16 | Phase 21 recording | Playwright video run (serve + cache, no model) | PASS 3.3 s | `data/demo_recording/.../video.webm` (~37 KB, git-ignored); SHA-256 `fbf628d8…342388ae` in `docs/demo_recording.md`; 2 spec fixes en route (route `/arch`, live text selectors) |
 | 2026-10-16 | Phase 21 runbook | `DEMO_RUNBOOK.md` complete | DONE | 15 steps with expected outputs + measured timings; failure table with recovery for every listed failure |
+| 2026-10-17 | Phase 22 research | OWASP GenAI Red Teaming Guide + DevSecOps LLM testing | CONFIRMED | 4-area mapping (model/implementation/infra/runtime) + regression-corpus rule; recorded RESEARCH_LOG.md Phase 22 |
+| 2026-10-17 | Phase 22 decisions | D22.1 + G3 + G4 + D22.2/D22.3 recorded | DONE | Severity scale LOCKED; G3 NOT ADOPTED (file-P@10 0.05 vs 0.45-0.68 band); G4 NOT ADOPTED (no vetted candidate); contamination/support/tau recorded |
+| 2026-10-17 | Phase 22 redteam | `python redteam/attacks/run_all.py --index data/indexes/fst.sqlite` | PASS worst=medium critical_open=0 | F01-F10 PASS, F11 8/18 gated (medium residual, backstop documented), F13 PASS; reproduced live |
+| 2026-10-17 | Phase 22 F12/G3 | `python redteam/attacks/family12_g3.py` (live 4B) | RECORDED `redteam/results/f12_contamination.json` | G3 B1 0.059 / B3 0.050 (orig), B1 0.055 / B3 0.050 (CF); B6 1/20 both copies (no memorization); B3-B6 gap = grounding value |
+| 2026-10-17 | Phase 22 support | manual grade 8 cached demo answers | 8/8 supported [0.68, 1.00] | All claims trace to cited defining files; q25 billing residual outside sample (honest limit) |
+| 2026-10-17 | Phase 22 regression | `pytest tests/security -q` | PASS 29/29 | 22 prior + 7 new `test_redteam_regressions.py` green |
+| 2026-10-17 | Phase 22 suite | `pytest tests/security/test_redteam_regressions.py -q` | PASS 7/7 | summary gate, family coverage, F01/F02/F05/F11/F12 pins |

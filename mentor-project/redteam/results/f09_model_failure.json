@@ -1,0 +1,8 @@
+{
+ "family": "f09_model_failure",
+ "result": "PASS",
+ "notes": [
+  "reason=gateway transport"
+ ],
+ "findings": []
+}

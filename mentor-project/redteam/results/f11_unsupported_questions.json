@@ -1,0 +1,13 @@
+{
+ "family": "f11_unsupported_questions",
+ "result": "8/18 gated pre-model",
+ "notes": [
+  "reaching model: ['How does billing work in this app?', 'How do I sign in with a passkey?', 'where is passkey login implemented?', 'Where are in-app notifications implemented?', 'how do I send a notification to a user?', 'how do workspaces work in this app?', 'Where is the audit log for admin actions?', 'how are admin actions logged?', 'How do I enable two-factor authentication?', 'is TOTP supported?']"
+ ],
+ "findings": [
+  {
+   "severity": "medium",
+   "what": "10/18 reach the model; validator + abstain rates are the backstop (Phase 9 test FA 1/2 documented residual)"
+  }
+ ]
+}

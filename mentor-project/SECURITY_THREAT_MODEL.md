@@ -50,3 +50,10 @@ test that fails if the control is removed. Residuals live at the bottom.
 4. **SocketGuard ≠ OS isolation.** Test guards record intent; the offline
    claim is proven separately by the Phase 19 offline check (recorded method
    + limits), not by unit tests.
+5. **Phase 22 red-team residual (medium): F11 — 10/18 adversarial
+   unanswerable rephrasings reach the model** (8/18 gated pre-model).
+   Backstop is the validator + measured abstention (Phase 9 test FA 1/2,
+   incl. the q25 billing confabulation: valid shape, semantically
+   unfaithful — the honest limit). No fix without raising false-abstains
+   past the calibrated optimum; recorded, not hidden. Regression pinned in
+   `tests/security/test_redteam_regressions.py::test_f11_backstop_documented`.

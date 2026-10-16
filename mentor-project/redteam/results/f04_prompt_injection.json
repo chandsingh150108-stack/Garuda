@@ -1,0 +1,8 @@
+{
+ "family": "f04_prompt_injection",
+ "result": "PASS 20 payloads",
+ "notes": [
+  "cf renamed-symbol hit=True"
+ ],
+ "findings": []
+}

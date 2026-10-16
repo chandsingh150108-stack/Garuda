@@ -1,0 +1,8 @@
+{
+ "family": "f06_access_control",
+ "result": "PASS",
+ "notes": [
+  "unknown repo -> 404"
+ ],
+ "findings": []
+}

@@ -1,0 +1,9 @@
+{
+ "family": "f02_fake_ranges",
+ "result": "PASS",
+ "notes": [
+  "clamped to 36-36",
+  "traversal -> 400"
+ ],
+ "findings": []
+}

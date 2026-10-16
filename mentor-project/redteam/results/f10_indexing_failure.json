@@ -1,0 +1,8 @@
+{
+ "family": "f10_indexing_failure",
+ "result": "PASS",
+ "notes": [
+  "build ok: files=1 failed=0"
+ ],
+ "findings": []
+}

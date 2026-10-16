@@ -44,14 +44,18 @@ def abstention(blocks: list[dict], missing: list[str], reason: str) -> dict:
             "closest": closest, "abstain_reason": reason}
 
 
-_DUMP_VERBS = r"(list\s+all|dump|export(\s+all)?|show\s+me\s+all|print\s+all)"
+_DUMP_VERBS = (r"(list\s+all|dump|export(\s+all)?|show\s+me\s+(all|every)|"
+               r"print\s+all)")
 _SECRET_NOUNS = (r"(passwords?|secrets?|api[\s_-]?keys?|tokens?|credentials?|"
                  r"private[\s_-]?keys?)")
 _BULK_PATTERNS = (
-    re.compile(_DUMP_VERBS + r"\s+(the\s+|all\s+)?" + _SECRET_NOUNS,
-               re.IGNORECASE),
+    re.compile(_DUMP_VERBS + r"\s+(the\s+|all\s+|every\s+|entire\s+|whole\s+)?"
+               + _SECRET_NOUNS, re.IGNORECASE),
     re.compile(_SECRET_NOUNS + r"\s+(for\s+)?" + _DUMP_VERBS, re.IGNORECASE),
     re.compile(r"^\s*" + _SECRET_NOUNS + r"\s*\??\s*$", re.IGNORECASE),
+    # Whole-table dumps (user rows include emails + password hashes).
+    re.compile(r"\b(dump|export)\b.{0,24}\b(entire|whole|all|full)\b"
+               r".{0,24}\btable\b", re.IGNORECASE),
 )
 
 

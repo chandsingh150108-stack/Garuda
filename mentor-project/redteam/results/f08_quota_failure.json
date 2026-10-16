@@ -1,0 +1,8 @@
+{
+ "family": "f08_quota_failure",
+ "result": "PASS",
+ "notes": [
+  "serving=local fallback=True"
+ ],
+ "findings": []
+}

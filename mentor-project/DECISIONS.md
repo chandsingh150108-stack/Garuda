@@ -1008,10 +1008,56 @@
 
 ## D21.2 Fallback
 - Status: LOCKED
-- Decision: Live local → labelled cache → honest abstain, in that order, always labelled. If the browser fails, the Playwright-recorded backup (`docs/demo_recording.md` location + SHA-256) plays. Cache-served answers always carry `cached: true`.
+- Decision: Live local + labelled cache + honest abstain, in that order, always labelled. If the browser fails, the Playwright-recorded backup (`docs/demo_recording.md` location + SHA-256) plays. Cache-served answers always carry `cached: true`.
 - Alternatives: Faking live answers from cache without labels (rejected: dishonest, and a failure condition).
 - Evidence: `docs/demo_recording.md`; offline check 8/8 labelled.
 - Reason: Every fallback is visible to the audience.
 - Confidence: High
 - Fallback: The recording.
 - Date: 2026-10-16
+
+## D22.1 Severity scale
+- Status: LOCKED
+- Decision: Critical = confidentiality, integrity, or grounding failure reachable by a normal user (must be fixed before completion); High / Medium / Low below. Every finding recorded in `redteam/results/` with severity, repro steps, fix, and retest; every fix gets a regression test in `tests/security/test_redteam_regressions.py`.
+- Alternatives: CVSS scoring (rejected: overkill for single-user localhost; reachability-by-normal-user is the binding question).
+- Evidence: Spec Phase 22; OWASP GenAI Red Teaming Guide structure (model / implementation / infrastructure / runtime) + OWASP DevSecOps LLM testing guidance (regression corpus, guardrail FPs/FNs, no model-as-judge) recorded in RESEARCH_LOG.md Phase 22 [OFFICIAL].
+- Reason: A structured post-build attack is the only evidence controls work outside their own tests.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-17
+
+## G3 agentic retrieval gate — OUTCOME: NOT ADOPTED (stay hybrid RAG)
+- Status: LOCKED (outcome; revisit only with new evidence + SUPERSEDED entry)
+- Decision: Agentic retrieval NOT enabled. Product stays on Phase 5 hybrid RAG (BM25 + symbol + path, RRF-60).
+- Alternatives: 3-tool 7B agent (read-only grep/symbol/read, <=4 turns) per spec D22.3 (rejected by measurement below).
+- Evidence (measured 2026-10-17, gold v1 n=22 answerable, CodeGrep file-P@10 definition, `redteam/results/f12_contamination.json` + `redteam/attacks/family12_g3.py`):
+  - Original fst: B1 mean file-P@10 0.059, B3 0.050.
+  - Counterfactual fst-cf: B1 0.055, B3 0.050.
+  - CodeGrep band where retrieval helps is 0.45-0.68 (BM25 0.375 hurts, Jina 0.445 neutral). Our 0.05 is an order of magnitude below the band where an agent's own eval shows benefit.
+  - Enabling an agent that injects low-precision context would reproduce the CodeGrep harm direction (bad retrieval worse than none). Intervals: at n=22 with mean 0.05, any benefit claim cannot exclude zero.
+- Reason: Empirical gate, not assumed constant (per V11 caveat). Precision measured on our gold set; agent stays Stage 3 Future.
+- Confidence: High (measurement); Medium (agent-benefit level itself comes from a 14B searcher that does not fit the laptop, so the threshold transfer is directional)
+- Fallback: Hybrid RAG (the product).
+- Benchmark procedure: `python redteam/attacks/family12_g3.py` (retrieval half needs no model); results in EVALUATION_RESULTS.md Phase 22.
+- Date: 2026-10-17
+
+## G4 reranker gate — OUTCOME: NOT ADOPTED
+- Status: LOCKED (outcome; revisit only with new evidence + SUPERSEDED entry)
+- Decision: No reranker shipped. No candidate run on the laptop.
+- Alternatives: Smallest fitting reranker A/B (e.g. Qwen3-Reranker-0.6B, ~1-2GB VRAM + ~300ms) (rejected without download: no permissive small reranker is pinned in `requirements*.txt`; VRAM budget is already spent on the 4B LLM at 3.57GB + display share of 8GB; CoREB transfer caveat V10 cuts both directions — off-shelf rerankers are task-asymmetric with -22% worst case on code-to-text, so an unmeasured adopt would violate the measured-not-argued rule).
+- Evidence: CoREB directional (V10, CP snippets not repo QA); B3 R@10 0.424 stands as the floor; Phase 22 redteam shows grounding holds without a reranker (F01 3/3 rejected, support sample 8/8).
+- Reason: Only own-gold gain with intervals excluding zero justifies the VRAM + latency cost. No such gain exists.
+- Confidence: High (policy); Medium (no A/B numbers by design — downloading an unvetted reranker would itself violate T8 supply-chain gating)
+- Fallback: None in MVP.
+- Benchmark procedure: reranker A/B script (defined, not run — no vetted candidate); results in EVALUATION_RESULTS.md as not-adopted with reason.
+- Date: 2026-10-17
+
+## D22.2/D22.3 Contamination + support + tau (Phase 22 measurements)
+- Status: LOCKED
+- Decision: (a) Contamination: B6 no-retrieval sample (6 answerable: q01/q03/q05/q09/q10/q15, Qwen3-4B, must_include keyword hit) scores 1/20 keywords on ORIGINAL and 1/20 on COUNTERFACTUAL (identical rows, `redteam/results/f12_contamination.json`). No memorization signal: the model knows neither copy; B3-R@10 parity (0.424 both, Phase 6) shows retrieval is structure-grounded. B3-minus-B6 gap (0.424 recall vs 0.05 keyword rate) is the grounding value. (b) Support: entailment-style manual grade of all 8 cached demo answers 8/8 supported (claims trace to cited defining files; see EVALUATION_RESULTS.md Phase 22 table). Known residual outside the sample: q25 billing confabulation (Phase 9 test FA 1/2) — valid shape, semantically unfaithful, the documented honest limit. (c) Tau: TAU_SCORE=0.02 / TAU_COV=0.0 stand; pre-gate abstains still cluster at top_score 0.01639 (single-retriever rank-1 only); the 0.02 value sitting exactly on an observed score is a recorded grid artifact, re-checked here and unchanged for lack of contrary evidence.
+- Alternatives: Larger B6 sample (rejected: 6 representative items suffice for a memorization flag; full-30 would cost 60 live calls for no new decision); NLI-in-the-loop (rejected: FactRel/RefNLI limits per Phase 9).
+- Evidence: `redteam/results/f12_contamination.json`; `data/demo_cache/answer_fst_q*.json` (8 answers); `docs/calibration_p9.json`.
+- Reason: Report rates with n and intervals; never claim 100% support.
+- Confidence: Medium (B6 n=6 items / 20 keywords; support n=8 — both small and reported as such)
+- Fallback: None.
+- Date: 2026-10-17
