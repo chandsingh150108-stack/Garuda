@@ -253,8 +253,15 @@ def assemble(repo_sha: str, path: str, spans: list[tuple[int, int, bool, str]],
 
 def chunk_file(repo_root: Path, relpath: str, symbols: list[dict],
                timeout_s: float = 10.0,
-               budget: int = CHUNK_BUDGET_TOKENS) -> dict:
-    """Chunk one indexed file. Returns {status, chunks} or {status: failed}."""
+               budget: int = CHUNK_BUDGET_TOKENS,
+               force_lines: bool = False) -> dict:
+    """Chunk one indexed file. Returns {status, chunks} or {status: failed}.
+
+    `force_lines` skips the AST plan (and its worker spawn + timeout budget)
+    and goes straight to degraded line windows. Used for files whose Phase 3
+    parse already failed: re-spending up to 2x timeout there is pure burn,
+    and the parses record already documents the cause.
+    """
     root = repo_root.resolve()
     try:
         target = F.safe_join(root, relpath)
@@ -267,10 +274,10 @@ def chunk_file(repo_root: Path, relpath: str, symbols: list[dict],
     suffix = Path(relpath).suffix.lower()
     language = T.LANGUAGE_FOR_EXT.get(suffix)
     spans: list[tuple[int, int, bool, str]] | None = None
-    if language in ("python", "typescript", "tsx"):
+    if language in ("python", "typescript", "tsx") and not force_lines:
         plan = plan_file(root, relpath, language, timeout_s)
         if plan.get("status") == "ok":
             spans = merge_spans(split_units(plan["units"], lines, budget), lines, budget)
     if spans is None:
-        spans = chunk_line_windows(lines)
+        spans = chunk_line_windows(lines, budget=budget)
     return {"status": "ok", "spans": spans, "lines": lines}

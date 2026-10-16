@@ -112,7 +112,8 @@ def _index_file(con: sqlite3.Connection, root: Path, sha: str, entry: dict,
     language = {".py": "python", ".ts": "typescript", ".tsx": "tsx",
                 ".js": "tsx", ".jsx": "tsx"}.get(suffix, "text")
     symbols = (parsed or {}).get("symbols", []) if parsed else []
-    res = K.chunk_file(root, rel, symbols, timeout_s)
+    failed_parse = parsed is not None and parsed.get("status") != "parsed"
+    res = K.chunk_file(root, rel, symbols, timeout_s, force_lines=failed_parse)
     if res.get("status") != "ok":
         stats["failed"].append({"path": rel, "reason": res.get("reason")})
         with con:

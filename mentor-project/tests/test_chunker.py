@@ -23,6 +23,16 @@ def test_approx_tokens_is_chars_over_four():
     assert K.approx_tokens("") == 0
 
 
+def test_chunk_file_force_lines_skips_ast_plan(tmp_path: Path):
+    src = tmp_path / "m.py"
+    src.write_text("def f():\n    return 1\n", encoding="utf-8")
+    res = K.chunk_file(tmp_path, "m.py", [], force_lines=True)
+    assert res["status"] == "ok"
+    assert res["spans"]
+    assert all(m == "lines" for (_, _, _, m) in res["spans"])
+    assert "".join(res["lines"]) != ""
+
+
 def test_split_small_units_merge():
     lines = _lines(10)
     units = [{"start": 1, "end": 5, "kind": "x", "children": []},

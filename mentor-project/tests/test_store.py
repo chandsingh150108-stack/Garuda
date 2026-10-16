@@ -82,6 +82,33 @@ def test_build_progress_goes_to_stderr(tmp_path: Path, capsys):
     assert captured.out == ""
 
 
+def test_failed_parse_takes_line_window_fast_path(tmp_path: Path):
+    repo = _repo_for(tmp_path, "ff.sqlite")
+    repo.mkdir()
+    _tiny_repo(repo)
+    manifest = M.build_manifest(repo, "testsha")
+    (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    files = {"app.py": {"path": "app.py", "status": "parse_failed",
+                        "reason": "timeout"}}
+    parses = {"sha": "testsha", "files": files, "routes": [], "models": [],
+              "include_routers": [], "edges": {"imports": [], "calls": []},
+              "config": {"compose": {}, "pyproject": {}, "package_json": {}}}
+    (tmp_path / "parses.json").write_text(json.dumps(parses), encoding="utf-8")
+    out = tmp_path / "ff.sqlite"
+    stats = S.build(repo, tmp_path / "manifest.json", tmp_path / "parses.json",
+                    out, repo_id="t")
+    assert stats["failed"] == []
+    con = sqlite3.connect(str(out))
+    try:
+        row = con.execute("SELECT skipped FROM files WHERE path = 'app.py'").fetchone()
+        assert row is not None and row[0] is None
+        methods = {r[0] for r in con.execute(
+            "SELECT DISTINCT method FROM chunks WHERE path = 'app.py'").fetchall()}
+        assert methods == {"lines"}
+    finally:
+        con.close()
+
+
 def test_reconstruction_tmp(tmp_path: Path):
     out = _build_tmp(tmp_path)
     repo = _repo_for(tmp_path)
