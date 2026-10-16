@@ -975,3 +975,43 @@
 - Confidence: High
 - Fallback: Amendment entries, never silent edits.
 - Date: 2026-10-16
+
+## D21.1 Demo script
+- Status: LOCKED
+- Decision: Fixed 15-step sequence (spec Final Demo Runbook) implemented in `mentor/demo.py` (`verify → print steps → open browser → serve`) and checked by `scripts/demo_check.py` (9 step-kinds, in-process, no model needed). Changes to the sequence require a recorded revision (this entry or a SUPERSEDED note).
+- Alternatives: Manual click-through (rejected: unrepeatable, failure-prone); network-dependent steps (rejected: cache-first per D19.3).
+- Evidence: `demo_check.py` 9/9 in ~0.5 s; 3 rehearsals recorded in VALIDATION_REPORT.md.
+- Reason: A demo that can't be re-run identically can't be rehearsed.
+- Confidence: High
+- Fallback: Backup recording (`docs/demo_recording.md`); labelled cache.
+- Date: 2026-10-16
+
+## D21.2 Fallback
+- Status: LOCKED
+- Decision: Live local → labelled cache → honest abstain, in that order; if the browser fails, the backup recording plays. The interface labels cache (`cached` flag → "· cached"); abstentions are never presented as answers.
+- Alternatives: Faking uncached answers (rejected: validator + D10.3 forbid); skipping failed steps silently (rejected: failure condition).
+- Evidence: offline check 8/8 labelled; e2e citation test serves cached in <1 s.
+- Reason: Every failure mode degrades to a more-honest state, never a faked one.
+- Confidence: High
+- Fallback: The recording (recovery table in DEMO_RUNBOOK.md).
+- Date: 2026-10-16
+
+## D21.1 Demo script
+- Status: LOCKED
+- Decision: `mentor demo` verifies index + demo cache FIRST (non-zero exit blocks a broken demo), prints the fixed Final-Demo-Runbook 15 steps with expected response kinds, opens `/ask` in the browser, then serves loopback. Step text changes require a recorded revision (this entry).
+- Alternatives: Manual click-through (rejected: unrepeatable, failure-prone under pressure).
+- Evidence: `mentor/demo.py::STEPS` (15, verbatim runbook order); `scripts/demo_check.py` 9/9.
+- Reason: The demo must be a program, not a performance.
+- Confidence: High
+- Fallback: Backup recording (D21.2).
+- Date: 2026-10-16
+
+## D21.2 Fallback
+- Status: LOCKED
+- Decision: Live local → labelled cache → honest abstain, in that order, always labelled. If the browser fails, the Playwright-recorded backup (`docs/demo_recording.md` location + SHA-256) plays. Cache-served answers always carry `cached: true`.
+- Alternatives: Faking live answers from cache without labels (rejected: dishonest, and a failure condition).
+- Evidence: `docs/demo_recording.md`; offline check 8/8 labelled.
+- Reason: Every fallback is visible to the audience.
+- Confidence: High
+- Fallback: The recording.
+- Date: 2026-10-16

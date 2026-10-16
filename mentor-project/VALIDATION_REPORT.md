@@ -97,3 +97,8 @@
 | 2026-10-16 | Phase 20 decisions | D20.1–D20.5 + protocol hash recorded | DONE | Design/metrics/analysis/privacy LOCKED; `protocol.md` SHA-256 frozen pre-data; n=0 deferred with cause |
 | 2026-10-16 | Phase 20 unit | `pytest tests/test_study_analysis.py -q` | PASS 4/4 | Balanced schedule + reproducibility; known-effect Wilcoxon; covering bootstrap CIs; synthetic end-to-end (n<6 flagged) |
 | 2026-10-16 | Phase 20 status | Data collection | DEFERRED n=0 | No participant pool in this environment; protocol pre-registered so a later run cannot move goalposts; Phase 21 proceeds on explicit deferral |
+| 2026-10-16 | Phase 21 research | Browser launch + recording tool | CONFIRMED | `webbrowser` stdlib + `--no-browser` hatch; Playwright video (pinned dep, zero new installs); OBS/Game Bar named as venue alternatives |
+| 2026-10-16 | Phase 21 decisions | D21.1–D21.2 recorded | DONE | Fixed 15-step script + verify-first; live→cache→abstain→recording fallback order |
+| 2026-10-16 | Phase 21 demo gate | `python scripts/demo_check.py` ×3 consecutive | PASS 9/9, 9/9, 9/9 (~0.7 s each) | Verify/index+cache, status, arch 8n/14e, cached signup answer, 8-step tour, cite→SHA, script-adapter abstain, 10 tasks, stale predicate |
+| 2026-10-16 | Phase 21 recording | Playwright video run (serve + cache, no model) | PASS 3.3 s | `data/demo_recording/.../video.webm` (~37 KB, git-ignored); SHA-256 `fbf628d8…342388ae` in `docs/demo_recording.md`; 2 spec fixes en route (route `/arch`, live text selectors) |
+| 2026-10-16 | Phase 21 runbook | `DEMO_RUNBOOK.md` complete | DONE | 15 steps with expected outputs + measured timings; failure table with recovery for every listed failure |

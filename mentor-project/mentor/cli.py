@@ -371,6 +371,15 @@ def main(argv: list[str] | None = None) -> int:
     pre.add_argument("--limit", type=int, default=10)
     pre.add_argument("--install", action="store_true",
                      help="copy tour JSONs into the serving cache dir")
+    dem = sub.add_parser("demo", help="Verify + open + serve the demo")
+    dem.add_argument("--index", default="data/indexes/fst.sqlite")
+    dem.add_argument("--repo", default="data/repos/fst")
+    dem.add_argument("--sha", default=PINNED_SHA)
+    dem.add_argument("--repo-id", default="fst")
+    dem.add_argument("--cache", default="data/demo_cache")
+    dem.add_argument("--host", default="127.0.0.1")
+    dem.add_argument("--port", type=int, default=8000)
+    dem.add_argument("--no-browser", action="store_true")
     args = parser.parse_args(argv)
     if args.command == "index":
         if args.manifest is None:
@@ -386,6 +395,11 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_reindex(args)
     if args.command == "precompute":
         return cmd_precompute(args)
+    if args.command == "demo":
+        from mentor import demo as D
+        return D.run(Path(args.index), Path(args.repo), args.sha,
+                     args.repo_id, Path(args.cache), args.host, args.port,
+                     args.no_browser)
     if args.command == "search":
         return cmd_search(args)
     if args.command == "eval" and args.what == "retrieval":
