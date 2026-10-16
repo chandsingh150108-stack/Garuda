@@ -215,3 +215,15 @@ Raw: `redteam/results/f12_contamination.json`.
 Support rate on this sample: 8/8 = 1.000 [0.68, 1.00] (Wilson n=8 — wide by design).
 Known residual OUTSIDE this sample: q25 billing confabulation (Phase 9 test FA 1/2) — valid shape (V1-V8 pass), semantically unfaithful. This is the honest limit in action, not a validator bug.
 Tau re-check: TAU_SCORE=0.02 / TAU_COV=0.0 stand; pre-gate abstains still cluster at 0.01639; the 0.02-on-observed-score grid artifact is re-recorded, unchanged for lack of contrary evidence.
+
+## perf-00 index-build micro-benchmarks (2026-10-17, target laptop, `scripts/bench_index_costs.py`)
+
+| Probe | Result |
+|---|---|
+| Spawn tax (`run_isolated` vs in-process `parse_bytes`, `sklearn/ensemble/_forest.py`, n=5) | spawned 0.28–0.34s vs in-process 0.009–0.01s — spawn ≈ 30x the parse; ~0.6s spawn tax per code file (parse + chunking phases) |
+| 11 parse-timeout files, in-process | `parse_bytes` 0.009–0.038s + `extract_py` 0.024–0.118s each (all <0.16s total) — NOT slow; grammar pathology ruled out |
+| Same 11 via `run_isolated`, 10s then 120s | all expire (deterministic, servers stopped) — true hang in spawned context only |
+| Hung child CPU over 14s wall | 0.2s — blocked, not spinning (deadlock signature) |
+| Pickled result sizes, all 1045 parses | 11 failures 64–119KB; 1034 passes ≤63KB; zero overlap — ~64KB pipe-buffer cliff |
+
+Reading: `run_isolated` (`mentor/parse/parse_worker.py:29-44`) joins-then-reads; results above the pipe buffer deadlock the feeder because the parent never drains during `join` (it only `get_nowait`s after). No finite timeout escapes; the `"timeout"` label is a misdiagnosis. Same landmine under `chunker.plan_file`. Spawn tax (~0.3s/spawn, ~1,800 spawns for sklearn) is the dominant total-time term.
