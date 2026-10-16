@@ -134,3 +134,24 @@ Command pattern: `python -m mentor.cli reindex --repo data/repos/fst --index <ID
 | answers | 8/10 validated + cache-warmed (q01 q04 q05 q10 q12 q15 q16 q17); q03 + q09 abstain pre-gate (retrieval floor, §Phase 6) |
 
 Offline serving: `scripts/offline_check.py` → 8/8 demo answers cache-labelled, 0 non-loopback attempts under enforcing guard.
+
+## Phase 20 study pre-registration (2026-10-16 — DEFERRED, n=0)
+
+Protocol `evals/study/protocol.md` frozen at SHA-256
+`2ddbe21611d38e28287e2e1182bb9d831762046912e00453726cfd59d7e8fe90`
+(recorded in DECISIONS.md before any data collection). Tooling verified on
+synthetic data only (`tests/test_study_analysis.py` 4/4: balanced 4-sequence
+schedule, known-effect Wilcoxon reproduced, bootstrap CIs cover +
+reproduce). Control condition (B6 no-retrieval, same rubric) defined in the
+protocol, data pending.
+
+| Item | Status |
+|---|---|
+| design / metrics / rubric / consent / schedule / analysis code | DONE, hashed |
+| participants recruited | 0 — NO pool in this environment (recorded cause) |
+| sessions run / scored | 0 (deferred) |
+| metrics incl. nulls | pending data; will report all or pilot-flag |
+
+Per the spec rollback rule this is reported as a pre-registered DEFERRED
+study with limits stated — not as results. Phase 21 proceeds on the
+explicit-deferral precondition.

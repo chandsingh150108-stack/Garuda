@@ -93,3 +93,7 @@
 | 2026-10-16 | Phase 19 unit | `pytest tests/test_offline.py tests/test_no_keys.py -q` | PASS 7/7 | Modes + offline veto + cached-labelled serve with zero egress + guard semantics; no-keys gate + local fallback |
 | 2026-10-16 | Phase 19 precompute | `mentor precompute --install` (live 4B, loopback) | 8 cached / 2 abstained | arch 8n/14e + 3 tours + 10 tasks + 8 validated answers warmed under serve-path keys; q03/q09 abstain (pre-gate, documented floor); tours installed to `data/cache` |
 | 2026-10-16 | Phase 19 offline | `python scripts/offline_check.py` | PASS 8/8 cached, 0 non-loopback | Status/arch/tours/tasks + all demo answers served cache-labelled under enforcing guard |
+| 2026-10-16 | Phase 20 research | Crossover + SUS + calibration + ethics | CONFIRMED | n≈10 large-effects-only stated in advance; no board applies, consent principles followed |
+| 2026-10-16 | Phase 20 decisions | D20.1–D20.5 + protocol hash recorded | DONE | Design/metrics/analysis/privacy LOCKED; `protocol.md` SHA-256 frozen pre-data; n=0 deferred with cause |
+| 2026-10-16 | Phase 20 unit | `pytest tests/test_study_analysis.py -q` | PASS 4/4 | Balanced schedule + reproducibility; known-effect Wilcoxon; covering bootstrap CIs; synthetic end-to-end (n<6 flagged) |
+| 2026-10-16 | Phase 20 status | Data collection | DEFERRED n=0 | No participant pool in this environment; protocol pre-registered so a later run cannot move goalposts; Phase 21 proceeds on explicit deferral |

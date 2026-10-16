@@ -915,3 +915,63 @@
 - Confidence: High
 - Fallback: Regenerate (`mentor precompute`); cache misses fall back to live inference with honest labels.
 - Date: 2026-10-16
+
+## D20.1 Design
+- Status: LOCKED (pre-registered; data collection DEFERRED — see status)
+- Decision: Counterbalanced within-subject crossover (D20.1): 2 sessions (washout ≥1 day), condition order × task-set rotation across 4 sequences from `randomize.py --seed 7`; 12 tasks (T1–T12 in `protocol.md`), 6 per condition; blind rubric scoring (0/1/2 + T12 drawing rubric).
+- Alternatives: Between-subjects (rejected: needs 2× participants for the same power); unregistered ad-hoc testing (rejected: unfalsifiable).
+- Evidence: `evals/study/protocol.md` (hash below); `tests/test_study_analysis.py` schedule balance test.
+- Reason: Within-subject controls for newcomer skill variance, the dominant confound at n≈10.
+- Confidence: Medium (design standard; execution pending)
+- Fallback: Pilot report with limits if n<8 (rollback rule).
+- Date: 2026-10-16
+
+## D20.2 Sample size
+- Status: LOCKED
+- Decision: Target n=8–12; pre-stated limit: detects LARGE effects only. Current status: n=0 — NO participant pool in this environment; study DEFERRED with cause (honest shortfall per spec), protocol pre-registered first so a later run cannot move the goalposts.
+- Alternatives: Claiming results without participants (rejected: fabrication); silent deferral (rejected: gate requires the shortfall recorded with cause).
+- Evidence: `PROJECT_STATUS.md` open questions; this entry predates any data.
+- Reason: A pre-registered deferred study beats an unregistered absent one.
+- Confidence: High (about the facts); no claims about outcomes.
+- Fallback: Run per protocol when a pool exists; report as pilot if n<8.
+- Date: 2026-10-16
+
+## D20.3 Metrics
+- Status: LOCKED
+- Decision: Time-on-task; correctness (0/1/2 blind rubric); correct-file rate; T12 drawing rubric 0–4; confidence 1–5 + calibration; SUS 0–100; free-text themes. ALL reported incl. nulls with n + intervals — omission of a null is a failure condition.
+- Alternatives: Time-only or SUS-only (rejected: single-metric stories mislead).
+- Evidence: `protocol.md` rubric + `session_template.md`; `analysis.py` implements every metric.
+- Reason: Understanding is multi-dimensional; the report must show all of it.
+- Confidence: Medium
+- Fallback: None (metric changes need an amendment entry).
+- Date: 2026-10-16
+
+## D20.4 Analysis
+- Status: LOCKED
+- Decision: Paired Wilcoxon signed-rank (normal approx, ties averaged, zeros dropped; n<6 descriptive-only) + median-difference effect + seeded bootstrap 95% CI, stdlib-only (`evals/study/analysis.py`). Verified on synthetic data (known-effect p<0.05 reproduced; CIs cover; seed reproduces).
+- Alternatives: t-test (rejected: normality uncheckable at n≈10); scipy (rejected: extra dependency for 30 lines of stats).
+- Evidence: `tests/test_study_analysis.py` 4/4 on synthetic data.
+- Reason: Non-parametric paired test fits small-n crossover data.
+- Confidence: Medium (code tested; real data pending)
+- Fallback: Descriptive pilot statistics if assumptions fail (recorded).
+- Date: 2026-10-16
+
+## D20.5 Privacy
+- Status: LOCKED
+- Decision: Pseudonymous IDs (P01…); recordings deleted after scoring; no personal data in the repo; written consent per `evals/study/consent.md` (contact filled before recruiting).
+- Alternatives: Named records (rejected: unnecessary exposure).
+- Evidence: `consent.md` + `session_template.md` (ID-only fields).
+- Reason: Minimal data, minimal retention.
+- Confidence: High
+- Fallback: None.
+- Date: 2026-10-16
+
+## Protocol pre-registration hash
+- Status: LOCKED
+- Decision: `evals/study/protocol.md` SHA-256 `2ddbe21611d38e28287e2e1182bb9d831762046912e00453726cfd59d7e8fe90`, recorded BEFORE any data collection (n=0). Any post-collection change requires a dated amendment entry; silent edits are a failure condition.
+- Alternatives: None (spec requirement).
+- Evidence: Computed 2026-10-16 on this machine.
+- Reason: Freezes the goalposts.
+- Confidence: High
+- Fallback: Amendment entries, never silent edits.
+- Date: 2026-10-16
