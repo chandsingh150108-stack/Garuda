@@ -236,13 +236,14 @@ def repo_architecture(repo_id: str):
     repo = _repo(repo_id)
     db = _index_db(repo)
     model = A.extract(db, repo["sha"])
-    problems = M.check(M.render(model))
+    mermaid = M.render(model)
+    problems = M.check(mermaid)
     if problems:
         raise HTTPException(status_code=500,
                             detail=f"mermaid check failed: {problems}")
     return {"repo_id": repo_id, "sha": repo["sha"],
             "nodes": model["nodes"], "edges": model["edges"],
-            "mermaid": M.render(model)}
+            "mermaid": mermaid}
 
 
 def _tour_cache_path(repo_id: str, sha: str, name: str) -> Path:

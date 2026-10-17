@@ -161,11 +161,12 @@ def cmd_arch(args) -> int:
         if problems:
             print(f"MERMAID CHECK FAILED: {problems}")
             return 1
-    out = Path(args.out)
+    out = Path(args.out) if args.out else (
+        Path("data/cache") / f"arch_{Path(args.index).stem}.mmd")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(text, encoding="utf-8")
     print(f"nodes={len(model['nodes'])} edges={len(model['edges'])}")
-    print(f"wrote {args.out}")
+    print(f"wrote {out}")
     return 0
 
 
@@ -342,7 +343,8 @@ def main(argv: list[str] | None = None) -> int:
     arc = sub.add_parser("arch", help="Deterministic architecture overview")
     arc.add_argument("--index", default="data/indexes/fst.sqlite")
     arc.add_argument("--sha", default=PINNED_SHA)
-    arc.add_argument("--out", default="data/cache/arch_fst.mmd")
+    arc.add_argument("--out", default=None,
+                     help="default: data/cache/arch_<index stem>.mmd")
     arc.add_argument("--format", default="mmd", choices=["mmd", "json"])
     trs = sub.add_parser("tours", help="Precomputed guided tours")
     trs.add_argument("action", choices=["precompute", "show"])

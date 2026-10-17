@@ -1,5 +1,6 @@
 """Phase 12 gate: component model — evidence coverage, golden match, titles."""
 import json
+import sqlite3
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -44,6 +45,36 @@ def test_key_flow_edges_present():
     assert ("N2", "N4") in pairs  # routes call CRUD services
     assert ("N4", "N3") in pairs  # services use models
     assert ("N5", "N2") in pairs  # frontend calls the API
+
+
+def test_edge_loop_skips_nodes_without_chunks():
+    import shutil
+    db = Path("data/cache/arch_test_nochunks.sqlite")
+    db.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(DB, db)
+    con = sqlite3.connect(db)
+    con.execute("DELETE FROM chunks WHERE snapshot_sha = ? AND path = ?",
+                (SHA, "backend/app/crud.py"))
+    con.commit()
+    con.close()
+    try:
+        model = A.extract(db, SHA)
+    finally:
+        db.unlink(missing_ok=True)
+    assert "N4" not in {n["id"] for n in model["nodes"]}
+    pairs = {(e["from"], e["to"]) for e in model["edges"]}
+    assert ("N2", "N4") not in pairs
+    assert ("N1", "N2") in pairs
+    assert all(e["evidence"] for e in model["edges"])
+
+
+def test_frontend_node_prefers_entry_files():
+    model = A.extract(DB, SHA)
+    n5 = next(n for n in model["nodes"] if n["id"] == "N5")
+    assert n5["paths"][0] == "frontend/src/main.tsx"
+    assert "frontend/src/routeTree.gen.ts" in n5["paths"]
+    assert all(p.startswith("frontend/src/") for p in n5["paths"])
+    assert not any(p.startswith("frontend/src/client/") for p in n5["paths"])
 
 
 def test_title_validation_rejects_unevidenced():

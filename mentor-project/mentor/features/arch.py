@@ -76,12 +76,11 @@ def _component_of(path: str) -> str | None:
         return "model-layer"  # schema migrations are schema-adjacent
     if path.startswith(FRONTEND_PREFIX):
         return "frontend"
-    if path in CONFIG_FILES or path.startswith("backend/app/core/"):
+    if path == CORE_DB or path in CONFIG_FILES \
+            or path.startswith("backend/app/core/"):
         return "configuration"
     if path.startswith(TEST_PREFIXES):
         return "test"
-    if path == CORE_DB:
-        return "configuration"
     return None
 
 
@@ -142,11 +141,29 @@ def _extract(con, sha: str) -> dict:
         sorted({r[0] for r in model_rows} | {MODELS_FILE}))
     add("N4", "service-layer", "service-layer", "CRUD services",
         list(SERVICES_FILES))
-    fe_routes = [r[0] for r in con.execute(
-        "SELECT path FROM files WHERE snapshot_sha = ? AND path LIKE ?"
-        " ORDER BY path LIMIT 4", (sha, FRONTEND_PREFIX + "%"))]
+    fe_paths: list[str] = []
+    for entry in ("frontend/src/main.tsx", "frontend/src/routeTree.gen.ts"):
+        if _file_exists(con, sha, entry):
+            fe_paths.append(entry)
+    for prefix in ("frontend/src/routes/", "frontend/src/components/"):
+        if len(fe_paths) >= 4:
+            break
+        for row in con.execute(
+                "SELECT path FROM files WHERE snapshot_sha = ? AND path LIKE ?"
+                " ORDER BY path LIMIT ?",
+                (sha, prefix + "%", 4 - len(fe_paths))):
+            if row[0] not in fe_paths:
+                fe_paths.append(row[0])
+    if len(fe_paths) < 4:
+        for row in con.execute(
+                "SELECT path FROM files WHERE snapshot_sha = ? AND path LIKE ?"
+                " AND path NOT LIKE ? ORDER BY path LIMIT ?",
+                (sha, FRONTEND_PREFIX + "%", "frontend/src/client/%",
+                 4 - len(fe_paths))):
+            if row[0] not in fe_paths:
+                fe_paths.append(row[0])
     add("N5", "frontend", "frontend", "React frontend",
-        fe_routes or [FRONTEND_PREFIX + "routeTree.gen.ts"])
+        fe_paths or [FRONTEND_PREFIX + "routeTree.gen.ts"])
 
     # external-database: compose db service image (never code).
     db_ev: list[dict] = []
@@ -178,8 +195,8 @@ def _extract(con, sha: str) -> dict:
                       "paths": [], "evidence": db_ev})
         by_comp["external-database"] = nodes[-1]
 
-    add("N7", "configuration", "configuration", "compose + settings",
-        list(CONFIG_FILES))
+    add("N7", "configuration", "configuration",
+        "config + core (settings/security/db)", list(CONFIG_FILES))
     test_files = [r[0] for r in con.execute(
         "SELECT path FROM files WHERE snapshot_sha = ? AND (path LIKE ?"
         " OR path LIKE ?) ORDER BY path LIMIT 4",
@@ -215,7 +232,11 @@ def _extract(con, sha: str) -> dict:
     ranked = sorted(agg.items(),
                     key=lambda kv: (-len(kv[1]), kv[0][0], kv[0][1]))
     edges = []
-    for (src, dst), cids in ranked[:MAX_EDGES]:
+    for (src, dst), cids in ranked:
+        if len(edges) >= MAX_EDGES:
+            break
+        if src not in comp_id or dst not in comp_id:
+            continue
         info = []
         for cid in cids[:3]:
             row = con.execute("SELECT path, start_line, end_line FROM chunks"

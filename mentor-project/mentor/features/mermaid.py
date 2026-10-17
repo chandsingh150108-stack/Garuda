@@ -25,8 +25,6 @@ SHAPES = {
     "external-database": ("[(", ")]"),  # cylinder
 }
 
-_NODE_OPEN = ("([", "[(", "[", "[")  # longest-first match order matters
-
 
 def escape_label(text: str) -> str:
     """Replace every Mermaid-significant character with safe text."""
