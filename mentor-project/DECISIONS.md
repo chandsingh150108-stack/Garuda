@@ -566,6 +566,16 @@
 - Fallback: Per rollback rule, never remove a rule to pass tests; record failure rates instead.
 - Date: 2026-10-16
 
+## D9.3 Amendment (V4 match scope, 2026-10-17)
+- Status: LOCKED (amends V4 of D9.3 only; V1–V3, V5–V9 stand)
+- Decision: V4 accepts a backticked identifier when it appears in the cited blocks' text OR equals the server-assigned `path` of a cited block. Path match is exact on the block's own `path` field; the model cannot invent it (paths are server-assigned per D9.1), so the containment property is preserved while removing a measured false positive: a file's own path never occurs in its source text.
+- Alternatives: Keep text-only matching (rejected: measured — an answer correctly citing the block for `backend/app/api/routes/users.py` and naming that path is rejected as `V4_UNSUPPORTED_IDENTIFIER`, burning the single repair and abstaining on a correct answer; reproduced deterministically 2026-10-17 on the live pipeline); drop V4 for path-shaped identifiers (rejected: naming the path of a NON-cited block must still fail — pinned as a new negative test).
+- Evidence: `tests/test_validator.py::test_v4_accepts_path_of_cited_block` + `::test_v4_rejects_path_of_uncited_block`; invalid suite still 12/12 (fixture `backticked_identifier_absent` keeps its code; blocks without a `path` field still reject).
+- Reason: The cited block is itself the proof its path exists; V4's property is "identifiers are supported by the cited evidence", not "identifiers are substrings of code text".
+- Confidence: High (false-positive fix; both directions pinned by tests)
+- Fallback: Revert to text-only match (restores the measured false positive).
+- Date: 2026-10-17
+
 ## D9.4 Abstention (thresholds LOCKED)
 - Status: LOCKED
 - Decision: Two layers. Pre-generation: abstain without a model call when `top_score < TAU_SCORE (0.02)` or (`identifier_coverage < TAU_COV (0.0)` with identifiers present — i.e. coverage gate OFF: grid search found it adds nothing beyond score on dev). Post-generation: abstain when validation + one repair fail. Calibrated on dev split (seed 7, n=15): correct 12/15, accuracy 0.800, false_answer 0, false_abstain 3. Held-out test (n=15): correct 10/15, false_answer 1/2 = 0.500 [0.09, 0.91], false_abstain 4/13 = 0.308 [0.13, 0.58]. Raw: `docs/calibration_p9.json`.

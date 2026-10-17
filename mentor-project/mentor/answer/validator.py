@@ -100,12 +100,15 @@ def validate(output: str | dict, blocks: list[dict]) -> list[VError]:
                 f"{tag}: kind=fact requires at least one valid evidence ID"))
         if seg.kind == "fact" and good_ids:
             has_cited_fact = True
-        # V4: backticked identifiers in facts appear in cited block text.
+        # V4: backticked identifiers in facts appear in cited block text
+        # or equal the server-assigned path of a cited block (D9.3 amendment).
         if seg.kind == "fact" and good_ids:
             cited_text = "\n".join(
                 _block_text(blocks, e) or "" for e in good_ids)
+            cited_paths = {b.get("path", "") for b in blocks
+                           if b["id"] in good_ids}
             for ident in _BACKTICKED.findall(seg.text):
-                if ident not in cited_text:
+                if ident not in cited_text and ident not in cited_paths:
                     errors.append(VError(
                         "V4_UNSUPPORTED_IDENTIFIER",
                         f"{tag}: `{ident}` does not appear in cited evidence"))

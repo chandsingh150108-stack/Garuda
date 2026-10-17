@@ -50,3 +50,36 @@ def test_valid_abstention_passes():
     out = {"status": "abstain", "segments": [],
            "missing": ["no billing code in evidence"]}
     assert V.validate(out, blocks) == []
+
+
+def test_v4_accepts_path_of_cited_block():
+    """D9.3 amendment: a cited block's own path supports naming it."""
+    blocks = [{"id": "E2", "path": "backend/app/api/routes/users.py",
+               "start_line": 103, "end_line": 161, "header": "users.py",
+               "text": "@router.post('/signup')\ndef register_user():\n    pass"}]
+    out = {"status": "answer",
+           "segments": [{"text": "Implemented by `register_user` in "
+                                 "`backend/app/api/routes/users.py`.",
+                         "kind": "fact", "evidence_ids": ["E2"]}],
+           "missing": []}
+    assert V.validate(out, blocks) == []
+
+
+def test_v4_rejects_path_of_uncited_block():
+    """D9.3 amendment keeps the negative: paths must be supported by a
+    block that is actually cited in this segment."""
+    blocks = [
+        {"id": "E1", "path": "frontend/src/routes/signup.tsx",
+         "start_line": 1, "end_line": 73, "header": "signup.tsx",
+         "text": "export function Signup() {}"},
+        {"id": "E2", "path": "backend/app/api/routes/users.py",
+         "start_line": 103, "end_line": 161, "header": "users.py",
+         "text": "def register_user():\n    pass"},
+    ]
+    out = {"status": "answer",
+           "segments": [{"text": "Handled in `backend/app/api/routes/"
+                                 "users.py`.",
+                         "kind": "fact", "evidence_ids": ["E1"]}],
+           "missing": []}
+    codes = {e.code for e in V.validate(out, blocks)}
+    assert "V4_UNSUPPORTED_IDENTIFIER" in codes
