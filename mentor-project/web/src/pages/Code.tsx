@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
+import { THEME_EVENT, getTheme } from "../theme";
 
 function usePlain(): boolean {
   return new URLSearchParams(window.location.search).get("plain") === "1";
@@ -19,8 +20,15 @@ export default function Code() {
   const [sha, setSha] = useState("");
   const [hash, setHash] = useState("");
   const [err, setErr] = useState("");
+  const [theme, setTheme] = useState(getTheme());
   const hostRef = useRef<HTMLDivElement>(null);
   const plain = usePlain();
+
+  useEffect(() => {
+    const onTheme = () => setTheme(getTheme());
+    window.addEventListener(THEME_EVENT, onTheme);
+    return () => window.removeEventListener(THEME_EVENT, onTheme);
+  }, []);
 
   useEffect(() => {
     let dead = false;
@@ -56,10 +64,12 @@ export default function Code() {
             : path.endsWith(".md")
               ? "markdown"
               : "typescript",
+          theme: theme === "dark" ? "vs-dark" : "vs",
           readOnly: true,
           domReadOnly: true,
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
+          padding: { top: 10 },
         });
         editor = ed;
         ed.deltaDecorations(
@@ -80,14 +90,17 @@ export default function Code() {
       dead = true;
       editor?.dispose();
     };
-  }, [text, path, start, end, plain]);
+  }, [text, path, start, end, plain, theme]);
 
   const stale = wantHash !== "" && hash !== "" && wantHash !== hash;
 
   return (
     <div>
-      <h2>Code</h2>
-      <p data-testid="sha-banner">
+      <h2>Code viewer</h2>
+      <p className="page-sub">
+        Read-only snapshot at the pinned commit — never the live working tree.
+      </p>
+      <p data-testid="sha-banner" className="sha-banner">
         {path}:{start}-{end} @ {sha.slice(0, 12)}
         {stale && <span className="chip chip-stale"> stale-citation</span>}
       </p>
@@ -102,11 +115,7 @@ export default function Code() {
             ))}
           </pre>
         ) : (
-          <div
-            ref={hostRef}
-            data-testid="monaco-host"
-            style={{ height: "60vh", border: "1px solid #ccc" }}
-          />
+          <div ref={hostRef} data-testid="monaco-host" className="monaco-host" />
         ))}
     </div>
   );

@@ -14,6 +14,15 @@ interface Props {
  * codebase (see tests/test_web_build.py) and model text never flows into
  * the Mermaid SVG path either.
  */
+export function ProviderPill({ answer }: { answer: AskResponse }) {
+  const label = providerLabel(answer);
+  const cls = label.startsWith("CLOUD")
+    ? "provider-cloud"
+    : answer.cached
+      ? "provider-cached"
+      : "provider-local";
+  return <span className={`provider-pill ${cls}`}>{label}</span>;
+}
 export default function AnswerView({ repoId, answer, codeHashes }: Props) {
   const byId: Record<string, EvidenceRef> = {};
   for (const e of [...answer.evidence, ...answer.closest]) byId[e.id] = e;
@@ -70,7 +79,8 @@ export default function AnswerView({ repoId, answer, codeHashes }: Props) {
         </div>
       ))}
       <p className="provider" data-testid="provider-label">
-        {providerLabel(answer)} · {answer.model} · repairs {answer.repairs}
+        <ProviderPill answer={answer} />
+        {answer.model} · repairs {answer.repairs}
         {answer.cached ? " · cached" : ""}
       </p>
     </div>

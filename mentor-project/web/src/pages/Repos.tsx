@@ -25,19 +25,30 @@ export default function Repos({ onRepo }: { onRepo: (id: string, sha: string) =>
   return (
     <div>
       <h2>Repositories</h2>
-      <label>
-        Path <input value={path} onChange={(e) => setPath(e.target.value)} size={30} />
-      </label>
-      <label>
-        SHA <input value={sha} onChange={(e) => setSha(e.target.value)} size={44} />
-      </label>
-      <label>
-        ID <input value={id} onChange={(e) => setId(e.target.value)} size={8} />
-      </label>
-      <button onClick={register} disabled={busy}>
-        Register
-      </button>
-      <p data-testid="repos-msg">{msg}</p>
+      <p className="page-sub">
+        Register a local checkout at a pinned commit — every citation the
+        system ever serves points at that exact SHA.
+      </p>
+      <div className="card form-card">
+        <label>
+          Path
+          <input value={path} onChange={(e) => setPath(e.target.value)} size={30} />
+        </label>
+        <label>
+          SHA
+          <input value={sha} onChange={(e) => setSha(e.target.value)} size={44} />
+        </label>
+        <label>
+          ID
+          <input value={id} onChange={(e) => setId(e.target.value)} size={8} />
+        </label>
+        <div>
+          <button onClick={register} disabled={busy}>
+            {busy ? "Registering…" : "Register"}
+          </button>
+        </div>
+        <p data-testid="repos-msg" className="repos-msg">{msg}</p>
+      </div>
     </div>
   );
 }
