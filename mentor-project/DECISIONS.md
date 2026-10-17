@@ -796,6 +796,16 @@
 - Fallback: None.
 - Date: 2026-10-16
 
+## D15 refresh (tasks-1–tasks-6, SUPERSEDES parts of D15.1)
+- Status: LOCKED
+- Decision: (1) Signals are repo-agnostic: source/test split by suffix + test-path rules (no `backend/app/%` literals); exclusions match path segments (`alembic/`, `migrations/`, vendored `externals/`/`vendor/`); fst top-10 preserved, sklearn fires todo + missing-tests + missing-docstring (453 + 3 post-vendored-exclusion). (2) Every task carries deterministic acceptance criteria + a `pytest`/`bandit` verify command + nearest-example test + open-first range; validator confirms all paths. (3) Optional LLM polish (`ALLOW_TASK_POLISH=false` default) through the Phase 9 contract with deterministic fallback; served only on id + evidence-hash match. (4) New signals: Bandit findings via a stored index artifact (LOW first, HIGH sinks, cap 12); GitHub good-first-issue/help-wanted via opt-in live fetch (`ALLOW_GH_TASKS=false`, never offline), evidence-linked to retrieval hits, uncited issues skipped. (5) Calibration v2 on a sklearn sample: weights stand; framework-comprehension blind spot + benchmark-helper low-value recorded as limits.
+- Alternatives: Per-repo signal configs (rejected: unmaintainable); LLM-written acceptance (rejected: uncheckable); cloud-hosted issue sync (rejected: network dependency in serving path).
+- Evidence: `tests/test_tasks.py` (incl. cross-repo kinds test), `tests/test_task_polish.py`, `evals/tasks_calibration.md` v2, EVALUATION_RESULTS.md perf acceptance.
+- Reason: Tasks must work on any repo, tell the newcomer exactly what "done" means, and never display unvalidated or stale text.
+- Confidence: Medium-high (measured on two repos; GH path live-untested — no `gh` binary on this machine)
+- Fallback: Deterministic spine (titles, acceptance, verify) serves alone with all flags off.
+- Date: 2026-10-17
+
 ## D16.1 Stack
 - Status: LOCKED
 - Decision: React 18.3.1 + TypeScript 5.7.2 + Vite 6.0.7 + Monaco 0.52.2 read-only + Mermaid 11.17.2 + plain CSS (no Tailwind). Pinned in `web/package.json` (amended Phase 18: 11.4.1→11.17.2).

@@ -50,6 +50,8 @@ def test_exclusions_match_segments_not_roots():
     assert TS._excluded("db/migrations/001_init.py")
     assert TS._excluded("frontend/src/client/sdk.gen.ts")
     assert TS._excluded("static/bundle.min.js")
+    assert TS._excluded("sklearn/externals/array_api_compat/common/_helpers.py")
+    assert TS._excluded("pkg/vendor/lib.py")
     assert not TS._excluded("backend/app/crud.py")
     assert not TS._excluded("sklearn/ensemble/_forest.py")
 

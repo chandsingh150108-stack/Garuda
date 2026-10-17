@@ -42,6 +42,10 @@ from mentor import config as CFG
 # rule travels across repositories.
 TODO_RE = re.compile(r"\b(TODO|FIXME|HACK)\b")
 EXCLUDED_SEGMENTS = ("alembic", "migrations", "migrate")
+# Vendored third-party code (calibration v2 finding): edits belong upstream,
+# so it never yields tasks — neither TODOs there nor tests/docs for it.
+VENDORED_SEGMENTS = ("externals", "vendor", "_vendor", "thirdparty",
+                     "third_party")
 EXCLUDED_SUFFIXES = (".gen.ts", ".min.js")
 # Source files eligible for symbol-based signals (test/spec files excluded
 # separately by _is_test_path). Mirrors the ingest code extensions.
@@ -53,6 +57,7 @@ TEST_PATH_RE = re.compile(r"(^|/)(test_|tests?/|test\.|.*[._-](spec|test)\.)",
 def _excluded(path: str) -> bool:
     segments = path.split("/")
     return (any(s in EXCLUDED_SEGMENTS for s in segments)
+            or any(s in VENDORED_SEGMENTS for s in segments)
             or path.endswith(EXCLUDED_SUFFIXES))
 
 

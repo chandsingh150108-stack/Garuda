@@ -39,3 +39,33 @@ highest among non-excluded tasks. Difficulty measures change scope, where a
 5-line pure function genuinely is small. Weights stand (round, conventional,
 sane order); the deviation is recorded here, not hidden. No weight was
 changed after this measurement.
+
+## Calibration v2 (2026-10-17, sklearn@85593ca sample — BEFORE any v2 tuning)
+
+Manual judgment, easiest → hardest, by reading code at the pinned SHA:
+
+1. `.pre-commit-config.yaml:34` TODO (d=2.00) — config-only hook note,
+   trivially checkable. Genuinely easiest.
+2. `asv_benchmarks/benchmarks/manifold.py` docstrings (d=2.69–3.79) —
+   trivial to write, but benchmark-helper docs are low-value tasks.
+3. `_metadata_requests.py` one-line `set_*_request` stubs (d=2.00) — tiny
+   surface, but needs metadata-routing framework comprehension. Harder
+   than (1) despite the tied score: framework knowledge is invisible to
+   the formula. Recorded deviation, same class as v1's.
+4. `asv_benchmarks` missing-tests (d≈4.1–4.6) — medium: needs the asv
+   harness plus the measured code. Formula agrees.
+5. `externals/array_api_compat` TODOs (d=21, risk 38) — must NOT be
+   recommended at all: vendored third-party code, edits belong upstream.
+   The formula buries them (high fan-in + `payment`? no — sml keywords +
+   fan-in) but for the wrong reason; correct behavior is exclusion.
+
+Weights check: formula order is 1=3 < 2 < 4 < 5 — the 1/3 tie cannot
+express framework-comprehension effort. Weights STAND (same round numbers,
+same reason as v1); ties and the framework-knowledge blind spot are
+recorded limits, not hidden. No weight changed after this measurement.
+
+Actionable outcome (implemented, not just recorded): vendored-code
+exclusion (`externals/`, `vendor/`, `_vendor/`, `thirdparty/`) in
+`_excluded` — the risk-38 externals TODOs leave the pool entirely.
+fst output unaffected (no such segments); sklearn loses only vendored
+items. Framework comprehension remains an open limitation.
