@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api")
 
 REGISTRY: dict[str, dict] = {}
 CODE_RANGE_CAP = 400
+CODE_FULL_CAP = 5000
 
 
 def adapter_factory():
@@ -178,7 +179,8 @@ def _attach_hashes(db: Path, sha: str, out: dict) -> None:
 def read_code(repo_id: str,
               path: str = Query(min_length=1, max_length=512),
               start: int = Query(default=1, ge=1),
-              end: int = Query(default=50, ge=1)):
+              end: int = Query(default=50, ge=1),
+              full: bool = Query(default=False)):
     repo = _repo(repo_id)
     root = Path(repo["path"]).resolve()
     target = (root / path).resolve()
@@ -194,15 +196,20 @@ def read_code(repo_id: str,
     total = len(lines)
     start = min(start, total) if total else 1
     end = min(end, total)
-    truncated = False
-    if end - start + 1 > CODE_RANGE_CAP:
+    clamp = end - start + 1 > CODE_RANGE_CAP
+    if clamp:
         end = start + CODE_RANGE_CAP - 1
-        truncated = True
-    text = "\n".join(lines[start - 1:end])
+    slice_text = "\n".join(lines[start - 1:end])
+    if full:
+        text = "\n".join(lines[:CODE_FULL_CAP])
+        truncated = total > CODE_FULL_CAP
+    else:
+        text = slice_text
+        truncated = clamp
     import hashlib
     return {"path": path, "sha": repo["sha"], "start": start, "end": end,
             "text": text, "truncated": truncated,
-            "content_hash": hashlib.sha256(text.encode("utf-8")).hexdigest()}
+            "content_hash": hashlib.sha256(slice_text.encode("utf-8")).hexdigest()}
 
 
 @router.get("/repos/{repo_id}/status", response_model=SC.StatusResponse)

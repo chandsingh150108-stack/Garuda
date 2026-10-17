@@ -1086,3 +1086,13 @@
 - Confidence: High for the fixes (regression-tested). Medium for the frontend priority heuristic being representative on other repos (rules are data; D12.2 fallback: new repos get their own recorded mapping).
 - Fallback: Revert to the pre-arch-01 behavior of D12.1-D12.3 (git working-tree change, uncommitted per user instruction 2026-10-17).
 - Date: 2026-10-17
+
+## D16.6 Full-file code view
+- Status: LOCKED
+- Decision: `GET /repos/{id}/code` gains `full: bool = false`. `full=1` returns the whole file (capped at `CODE_FULL_CAP=5000` lines, `truncated=true` beyond); `content_hash` stays the sha256 of the clamped start..end slice in BOTH modes, so D17.3 stale-citation semantics are unchanged; default (no param) is byte-for-byte the previous range behavior incl. `CODE_RANGE_CAP=400`. The web Code viewer always requests `full=1`, renders the whole file in Monaco and highlights the cited range via `hl-range`; the plain fallback shows file-absolute line numbers. Applies to every Code-page entry point (citation chips, arch node cards, tour links).
+- Alternatives: Client-side stitching of range fetches (rejected: multiple requests, still partial context); making full the server default (rejected: changes the documented range contract + cap tests); reading full text from index chunks (rejected: chunks are not the full file; pinned working-tree read is the established trust model).
+- Evidence: `tests/test_api.py::test_full_file_mode_returns_whole_file_with_slice_hash` (whole file > 400 cap; cross-mode hash equality; small file not truncated); `web/tests/code.test.tsx` (plain view: 60 lines rendered, exactly 3 highlighted, `full=true` requested, banner intact — monaco stubbed via test-only alias in `web/vitest.config.ts`); full suite 278 passed / 1 skipped; `npm run build` clean (production bundle unaffected by the test alias); vitest 6/6; `test_web_build.py` 3/3.
+- Reason: Evidence must be readable in its file context; a click on a citation previously showed only the 40-line window with no surroundings.
+- Confidence: High (mechanical change; stale-hash invariant regression-tested).
+- Fallback: Drop the `full` param and revert `Code.tsx` to range fetch (range view returns unchanged).
+- Date: 2026-10-17

@@ -82,6 +82,25 @@ def test_range_cap_truncates(client):
     assert len(body["text"].splitlines()) == R.CODE_RANGE_CAP
 
 
+def test_full_file_mode_returns_whole_file_with_slice_hash(client):
+    p = "frontend/src/client/types.gen.ts"
+    full = client.get("/api/repos/t/code",
+                      params={"path": p, "start": 1, "end": 5, "full": "1"})
+    assert full.status_code == 200
+    body = full.json()
+    assert len(body["text"].splitlines()) > R.CODE_RANGE_CAP
+    assert body["truncated"] is False
+    ranged = client.get("/api/repos/t/code",
+                        params={"path": p, "start": 1, "end": 5})
+    assert body["content_hash"] == ranged.json()["content_hash"]
+    small = client.get("/api/repos/t/code",
+                       params={"path": "backend/app/main.py", "start": 1,
+                               "end": 5, "full": "1"})
+    small_body = small.json()
+    assert small_body["truncated"] is False
+    assert len(small_body["text"].splitlines()) > 5
+
+
 def test_oversize_body_rejected(client):
     big = "x" * (CFG.MAX_BODY_BYTES + 1)
     r = client.post("/api/repos/t/ask", json={"question": big})

@@ -7,8 +7,9 @@ function usePlain(): boolean {
   return new URLSearchParams(window.location.search).get("plain") === "1";
 }
 
-/** Read-only code view with highlighted range + SHA banner. Falls back to a
- * plain line-numbered view if Monaco fails (recorded rollback). */
+/** Read-only code view: full file with the requested range highlighted +
+ * SHA banner. Falls back to a plain line-numbered view if Monaco fails
+ * (recorded rollback). */
 export default function Code() {
   const [params] = useSearchParams();
   const repo = params.get("repo") ?? "fst";
@@ -33,7 +34,7 @@ export default function Code() {
   useEffect(() => {
     let dead = false;
     api
-      .code(repo, path, start, end)
+      .code(repo, path, start, end, true)
       .then((c) => {
         if (dead) return;
         setText(c.text);
@@ -110,7 +111,7 @@ export default function Code() {
           <pre data-testid="plain-view">
             {text.split("\n").map((ln, i) => (
               <div key={i} className={i + 1 >= start && i + 1 <= end ? "hl-range" : ""}>
-                <span className="ln">{start + i}</span> {ln}
+                <span className="ln">{i + 1}</span> {ln}
               </div>
             ))}
           </pre>

@@ -61,9 +61,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ question, k, why }),
     }),
-  code: (id: string, path: string, start: number, end: number) =>
+  code: (id: string, path: string, start: number, end: number, full = false) =>
     req<CodeResponse>(
-      `/api/repos/${id}/code?path=${encodeURIComponent(path)}&start=${start}&end=${end}`
+      `/api/repos/${id}/code?path=${encodeURIComponent(path)}&start=${start}&end=${end}${full ? "&full=1" : ""}`
     ),
   architecture: (id: string) => req(`/api/repos/${id}/architecture`),
   tours: (id: string) => req("/api/repos/" + id + "/tours"),
