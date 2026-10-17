@@ -29,12 +29,12 @@ export function applyTheme(t: Theme): void {
 
 /** Least-opinionated mermaid preset + explicit variables. Two channels carry
  * theming, and BOTH are set deliberately:
- * 1. These variables: mermaid bakes them into attributes/inline styles at
- *    render time (attributes survive CSP; this is how fonts, actor boxes,
- *    and note colors actually take effect).
- * 2. Our own CSS (styles.css): backstop for everything mermaid only emits
- *    via its injected stylesheet (CSP-blocked here), e.g. flowchart edge
- *    strokes. CSS `!important` always beats the attributes from (1).
+ * 1. These variables: mermaid bakes them into SVG attributes at render time
+ *    (this is how fonts, actor boxes, and note colors natively take effect).
+ * 2. Our own CSS (styles.css): backstop that pins diagrams to the app's
+ *    variables in both themes (mermaid's injected stylesheet is allowed
+ *    since D16.7 but bakes its colors at render time). CSS `!important`
+ *    always beats the attributes from (1).
  */
 export function mermaidBaseConfig(t: Theme): Record<string, unknown> {
   const dark = t === "dark";

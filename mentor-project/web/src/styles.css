@@ -1,7 +1,8 @@
 /* Codebase Mentor design system (D16.5 refresh).
  * Plain CSS only: no frameworks, no new dependencies. All motion is pure
- * CSS keyframes/transitions so the CSP gate (style-src 'self', no inline
- * scripts) and the web-build tests keep passing. */
+ * CSS keyframes/transitions so the CSP gate (no inline scripts; style-src
+ * allows 'unsafe-inline' since D16.7 for Monaco/Mermaid runtime stylesheets)
+ * and the web-build tests keep passing. */
 
 * {
   box-sizing: border-box;
@@ -877,13 +878,13 @@ label {
   color: #fff;
 }
 
-/* ---------- mermaid diagrams (self-sufficient styling) ----------
- * Mermaid's injected theme stylesheet does not apply in this page
- * (CSP `style-src 'self'`), so every SVG-painted part is styled here from
- * our own bundle. Without this, flowchart edges fall back to
- * fill:black/stroke:none (solid blobs) and sequence labels to black text.
- * Class names (.flowchart-link, .actor, .messageText, …) are mermaid v11
- * stable output hooks. */
+/* ---------- mermaid diagrams (app-consistent styling) ----------
+ * Mermaid's injected theme stylesheet is allowed again since D16.7, but
+ * every SVG-painted part is still styled here from our own bundle so
+ * diagrams match the app's CSS variables in both themes. Without this,
+ * flowchart edges fall back to fill:black/stroke:none (solid blobs) and
+ * sequence labels to black text. Class names (.flowchart-link, .actor,
+ * .messageText, …) are mermaid v11 stable output hooks. */
 
 .diagram-frame svg,
 [data-testid="arch-svg"] svg {

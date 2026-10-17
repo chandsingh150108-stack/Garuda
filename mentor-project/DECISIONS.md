@@ -1106,3 +1106,13 @@
 - Confidence: High (mechanical change; stale-hash invariant regression-tested).
 - Fallback: Drop the `full` param and revert `Code.tsx` to range fetch (range view returns unchanged).
 - Date: 2026-10-17
+
+## D16.7 CSP style-src exception for Monaco token colors
+- Status: LOCKED
+- Decision: `web/index.html` CSP keeps `default-src/script-src/connect-src/worker-src 'self'` and gains `'unsafe-inline'` in `style-src` only. Monaco applies theme/token colors by injecting a `<style>` element at runtime (its `StandaloneThemeService` builds the `.mtk*` rules per theme); `style-src 'self'` refused it, so the editor stayed monochrome even after the worker fix (D16.6 follow-up).
+- Alternatives: CSP nonce on Monaco's injected styles (rejected: Monaco 0.52 exposes no nonce hook — VSCode's webview patches this, the standalone build does not); style hash list (rejected: the stylesheet content is generated at runtime from theme + decoration state, unstable across versions); hand-writing `.mtk*` rules in `styles.css` (rejected: the class numbering is an internal Monaco detail, fragile across upgrades).
+- Evidence: headless Chromium (Playwright against live `serve` :8000) before: `distinctColors` = 1 (`rgb(28, 35, 51)`) + 20+ console `Refused to apply inline style … "style-src 'self'"`; after: `distinctColors` = 6 (VSCode `vs` palette — `#0000ff` keyword, `#098658` comment, `#a31515` string, `#008000`, `#0431fa`, `#000`), zero console errors, both workers HTTP 200. `/arch` re-verified after the change (diagram + 8 node cards render, no console errors): mermaid's injected stylesheet now also applies, and the `styles.css` backstop still governs diagram theming via `!important`; source comments in `styles.css`/`theme.ts` updated to match. `test_web_build.py` 3/3 and `tests/security/test_t13_xss.py` green unchanged (they assert `default/script/connect 'self'` + no inline scripts); full suite 280 + 1 skip; vitest 6/6; build clean.
+- Reason: script-src stays strict, so no injected style can lead to script execution; every untrusted string in the DOM is a React text node (no `dangerouslySetInnerHTML`), so there is no attacker-controlled markup a style injection could exploit. Residual is cosmetic CSS-only and recorded in SECURITY_THREAT_MODEL.md (T13).
+- Confidence: High (single-cause fix measured before/after in a real browser).
+- Fallback: restore `style-src 'self'` — the code view falls back to monochrome text (structure unaffected).
+- Date: 2026-10-17

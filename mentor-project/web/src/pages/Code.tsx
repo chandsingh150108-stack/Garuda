@@ -58,6 +58,22 @@ export default function Code() {
         // falls back to the plain view (recorded rollback).
         const monaco = await import("monaco-editor");
         if (dead || !hostRef.current) return;
+        // Syntax tokenizers run in web workers; without this the editor
+        // renders monochrome. Workers are same-origin build assets (CSP
+        // worker-src 'self'), not blob: URLs.
+        const [{ default: EditorWorker }, { default: TsWorker }] =
+          await Promise.all([
+            import("monaco-editor/esm/vs/editor/editor.worker?worker"),
+            import("monaco-editor/esm/vs/language/typescript/ts.worker?worker"),
+          ]);
+        (self as unknown as {
+          MonacoEnvironment: {
+            getWorker: (workerId: string, label: string) => Worker;
+          };
+        }).MonacoEnvironment = {
+          getWorker: (_workerId, label) =>
+            label === "typescript" ? new TsWorker() : new EditorWorker(),
+        };
         const ed = monaco.editor.create(hostRef.current, {
           value: text,
           language: path.endsWith(".py")

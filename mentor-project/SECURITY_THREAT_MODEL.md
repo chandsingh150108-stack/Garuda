@@ -17,7 +17,7 @@ test that fails if the control is removed. Residuals live at the bottom.
 | T10 | Stale answers | artifacts | SHA on every answer; dep-set invalidation; lazy regen | `tests/test_freshness.py` (scenario/negative/positive/rename) | PASS |
 | T11 | Path traversal in the API | API | `realpath` confinement (`safe_join`) | `tests/test_api.py::test_path_confinement` | PASS |
 | T12 | Command injection | process invocation | no `shell=True`; argv lists only (AST-verified) | `tests/security/test_t12_no_shell.py` | PASS |
-| T13 | XSS in the interface | browser | plain-text rendering (D16.2); CSP in source + built output | `tests/security/test_t13_xss.py` + `tests/test_web_build.py` + vitest | PASS |
+| T13 | XSS in the interface | browser | plain-text rendering (D16.2); CSP in source + built output (`script-src 'self'`; `style-src 'self' 'unsafe-inline'` since D16.7 for Monaco/Mermaid runtime stylesheets — CSS-only, no script path) | `tests/security/test_t13_xss.py` + `tests/test_web_build.py` + vitest | PASS |
 | T14 | Unsafe deserialization | weights + caches | no pickle/untrusted loads (AST-verified); JSON-only caches | `tests/security/test_t14_deserialization.py` | PASS |
 
 ## Static-tool results (2026-10-16, target laptop)
